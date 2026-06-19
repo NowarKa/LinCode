@@ -70,6 +70,7 @@ Testing/
 
 # test and data
 *.txt
+!CMakeLists.txt
 data/
 solutions
 test_field
