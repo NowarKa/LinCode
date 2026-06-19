@@ -122,3 +122,11 @@ target_link_libraries(test_projectif_space PRIVATE
 )
 
 target_compile_features(test_projectif_space PRIVATE cxx_std_17)
+
+add_custom_target(output_clean
+    COMMAND rm -f solutions problem_phase1.txt
+)
+
+add_custom_target(data_clean
+    COMMAND rm -rf data/
+)
