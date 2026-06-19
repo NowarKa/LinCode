@@ -1,0 +1,106 @@
+#include "constraints_phase1.hh"
+#include "constructed_codes_table.hh"
+#include "field_vector.hh"
+#include "linear_code.hh"
+#include "projective_space.hh"
+
+#include <cstdlib>
+#include <memory>
+#include <vector>
+#include <queue>
+#include <iostream>
+#include <CLI/CLI.hpp>
+
+
+int main (int argc, char *argv[]) 
+{
+  Params params;
+  CLI::App app{"LinCode - Linear Code Classification Tool"};
+
+  app.add_option("--delta", params.delta,
+      "Restrict to linear codes whose weights are divisible by delta (default: 1).");
+
+  app.add_flag("-q, --field-order", params.field_order,
+      "Order of the finite field (default: 2).");
+
+  app.add_flag("-d, --minimum-weight", params.minimum_weight,
+      "Minimum minimum distance of the linear codes to classify.");
+
+  app.add_flag("--check-feasibility", params.check_feasibility,
+      "Check the feasibility of solutions with SCIP before enumerating them.");
+
+  app.add_flag("--save-results", params.save_results,
+      "Save the classified codes to disk.");
+
+  CLI11_PARSE(app, argc, argv);
+
+  const Field GF4 = Field(2, 2, {1,1,1});
+  const Field GF2 = Field(2, 1, {1,1});
+  const Field GF3 = Field(3, 1, {1,1});
+
+  auto GF2_ptr = make_shared<const Field>(GF2);
+  auto GF3_ptr = make_shared<const Field>(GF3);
+  auto GF4_ptr = make_shared<const Field>(GF4);
+
+  // To change according to the value of q
+  params.field = GF2_ptr;
+
+  ConstructedCodesTable constructed_codes;
+  queue<LCode> extended_code;
+
+  params.upper_bound_n = 6;
+  params.minimum_weight = 3;
+
+  cout << "Adding one-dimensional linear codes...\n";
+  for (size_t n = 2; n < params.upper_bound_n; n++)
+  {
+    auto ps = ProjectiveSpace(n, params.field);
+
+    for (auto& p : ps.get_all_points())
+    {
+      auto w = weight(p.get_coordinates());
+      if (w >= params.minimum_weight && w % params.delta == 0)
+      {
+        // cout << "n is now " << n << endl;
+        // cout << "Code added with weight " << w << endl;
+        auto code = LCode({p.get_coordinates()});
+        extended_code.push(code);
+        constructed_codes.insert_code(code);
+      }
+    }
+  }
+
+  cout << "Done\n";
+
+  while (!extended_code.empty()) {
+    auto c = extended_code.front();
+    extended_code.pop();
+
+    size_t n = c.get_nb_columns();
+    size_t k = c.get_nb_rows();
+
+    if (n > params.upper_bound_n)
+      continue;
+
+    system("clear");
+
+    cout << "==================================================================\n";
+    cout << "=== ****************** Intermediate results ****************** ===\n";
+    cout << "==================================================================\n";
+    cout << constructed_codes;
+    cout << "Extending code (" << n << ", " << k << ")" << endl;
+    cout << c << endl;
+    cout << "==================================================================\n";
+    cout << "=== ************************** END *************************** ===\n";
+    cout << "==================================================================\n";
+
+    extend_code(c, params, extended_code, constructed_codes);
+  }
+
+  cout << constructed_codes;
+
+  if (params.save_results)
+    constructed_codes.save();
+
+  return 0;
+}
