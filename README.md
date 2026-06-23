@@ -1,7 +1,7 @@
 <div align="center">
 
 <!-- A logo would be welcome
-<img src="tango's_logo" width=300> 
+<img src="LinCode's_logo" width=300> 
 -->
 
 # LinCode - Linear Code Classification Tool
@@ -18,10 +18,10 @@
 
 </div>
 
-The goal of the LinCode software is to classify linear codes.
-The implemented algorithms are exposed in [1] and [2].
+The goal of the LinCode software is to classify linear codes. 
+The implemented algorithms are presented in [1] and [2].
 
-For inquiries about the tool contact nowar.kazem@ens-rennes.fr.
+<!-- For inquiries about the tool contact nowar.kazem@ens-rennes.fr. -->
 
 
 ## Installation 
@@ -69,16 +69,17 @@ Usage: ./LinCode [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
-  --delta INT                 Restrict to linear codes whose weights are divisible by delta (default: 1).
-  -q,--field-order [0]        Order of the finite field (default: 2).
-  -d,--minimum-weight [0]     Minimum minimum distance of the linear codes to classify.
+  --delta INT                 Restrict the classification to linear codes whose codeword weights are divisible by delta (default: 1).
+  --field-file TEXT:FILE      Path to the file defining the finite field.
+  --minimum-weight INT        Minimum minimum distance of the linear codes to classify (default: 1).
+  --maximum-weight INT        Maximum allowed minimum distance of the linear codes to classify (default: INT_MAX).
   --check-feasibility         Check the feasibility of solutions with SCIP before enumerating them.
   --save-results              Save the classified codes to disk.
+  --load INT                  Load previously saved results and initialize the queue with all saved codes of dimension [l, k], where k is fixed.
+  --ubn INT                   Classify linear codes of dimension [n, k] for all lengths n <= ubn (default: 6).
 ```
-The generated files are placed in the `output` folder. 
-SVG files illustrating all intermediate availability relations (AVs) are 
-stored in the `output/AVs` folder. Note that the generation of the .svg files
-for all intermediate availability relations increases substantially the execution time. 
+The generated files are placed in the `data` folder. All classified codes of 
+dimension `[n, k]` can be found in a `n_k.txt` file in `data` folder.
 
 To clean and delete the generated files, run the following command 
 (which requires the `Makefile` to be present, which can be done by 
@@ -136,8 +137,8 @@ classDiagram
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 
-(GPL-3.0). See the `LICENSE` file for details.
+The software is licensed under a variant of the 3-clause BSD license, 
+see the file `LICENSE`.
 
 ## References
 
@@ -153,6 +154,3 @@ pp. 7807-7814, Dec. 2021, doi: 10.1109/TIT.2021.3114280.
 
 <!--  ## Roadmap
 Will be there soon. -->
-
-<!-- This README is inspired by the default README and the one of GSS -->
-

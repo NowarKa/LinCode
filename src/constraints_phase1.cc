@@ -56,7 +56,7 @@ auto check_lcode(
   if (constructed_codes.contains_code(code))
     return false;
 
-  return code.weight() >= d && code.weight() <= D;
+  return code.weight() >= d && code.is_codeword_weight_divisible(D);
 }
 
 

@@ -19,17 +19,19 @@ int main (int argc, char *argv[])
   CLI::App app{"LinCode - Linear Code Classification Tool"};
 
   app.add_option("--delta", params.delta,
-      "Restrict to linear codes whose weights are divisible by delta (default: 1).");
+      "Restrict the classification to linear codes whose codeword weights "
+      "are divisible by delta (default: 1).");
 
   app.add_option("--field-file", params.field_file,
-      "Path to the field file.")
+      "Path to the file defining the finite field.")
     ->check(CLI::ExistingFile);
 
   app.add_option("--minimum-weight", params.minimum_weight,
       "Minimum minimum distance of the linear codes to classify (default: 1).");
 
   app.add_option("--maximum-weight", params.maximum_weight,
-      "Maximum minimum distance of the linear codes to classify (default: INT_MAX).");
+      "Maximum allowed minimum distance of the linear codes to "
+      "classify (default: INT_MAX).");
 
   app.add_flag("--check-feasibility", params.check_feasibility,
       "Check the feasibility of solutions with SCIP before enumerating them.");
@@ -37,11 +39,12 @@ int main (int argc, char *argv[])
   app.add_flag("--save-results", params.save_results,
       "Save the classified codes to disk.");
 
-  app.add_option("--load", params.k, "Load saved results and initialize the "
-      "queue with all saved codes of dimension [n', k] (k is fixed).");
+  app.add_option("--load", params.k, "Load previously saved results and " 
+      "initialize the queue with all saved codes of dimension [n', k], " 
+      "where k is fixed.");
 
-  app.add_option("--ubn", params.upper_bound_n, "Classify codes of dimension [n, k] "
-      "where n <= ubn (default: 6).");
+  app.add_option("--ubn", params.upper_bound_n, "Classify linear codes of "
+      "dimension [n, k] for all lengths n <= ubn (default: 6).");
 
   CLI11_PARSE(app, argc, argv);
 
@@ -66,6 +69,7 @@ int main (int argc, char *argv[])
   // Loading results and initializing the queue
   if (params.k != 0)
   {
+    cout << "Loading existing results...\n";
     constructed_codes.load();
     constructed_codes.load_queue(params.k, extended_code, params.field);
   }
@@ -116,6 +120,7 @@ int main (int argc, char *argv[])
     cout << constructed_codes;
     cout << "Extending code (" << n << ", " << k << ")" << endl;
     cout << c << endl;
+    cout << c.canonical_form() << endl;
     cout << "==================================================================\n";
     cout << "=== ************************** END *************************** ===\n";
     cout << "==================================================================\n";

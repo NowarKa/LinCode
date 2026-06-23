@@ -193,6 +193,28 @@ auto LCode::weight() const -> uint32_t
 
 
 /* ************************************************************************* */
+auto LCode::is_codeword_weight_divisible(int delta) -> bool
+{
+  if (delta <= 1)
+    return true;
+
+  auto ps = ProjectiveSpace(get_nb_rows(), rows_[0][0].get_field());
+  auto points = ps.get_all_points();
+
+  for (const auto& p : points)
+  {
+    auto encoded = encode_column_vector(p.get_coordinates());
+    int h = hamming_weight(encoded);
+    
+    if (h % delta != 0)
+      return false;
+  }
+
+  return true;
+}
+
+
+/* ************************************************************************* */
 auto LCode::from_canonical_form(
     const string& canonical_form,
     shared_ptr<const Field> field)
@@ -220,7 +242,6 @@ auto LCode::from_canonical_form(
         throw runtime_error( "Invalid canonical form matrix.");
 
       line.push_back(field->get_element(value));
-      // rows[i][j] = field->get_element(value);
     }
 
     rows.push_back(line);

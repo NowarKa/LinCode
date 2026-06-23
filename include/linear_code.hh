@@ -96,6 +96,15 @@ public:
 
 
   /**
+   * Returns true if all weights of the codewords of LCode is divisible by 
+   * delta (aka LCode is delta-divisible), false otherwise.
+   *
+   * @param delta A specified integer.
+   */
+  auto is_codeword_weight_divisible(int delta) -> bool;
+
+
+  /**
     Returns LCode's canonical form.
    */
   auto canonical_form(const string& sage_binary = "sage") -> const string;

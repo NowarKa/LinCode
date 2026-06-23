@@ -7,7 +7,6 @@
 #include <memory>
 #include <queue>
 #include <string>
-#include <string_view>
 
 
 /* ************************************************************************* */
@@ -250,8 +249,10 @@ auto ConstructedCodesTable::load(
     if (!current.empty())
       table_[{n, k}].insert(current);
 
+    /*
     auto field = Field(field_info.characteristic, 
         field_info.reduction_polynomial.size(),
         field_info.reduction_polynomial);
+    */
   }
 }
