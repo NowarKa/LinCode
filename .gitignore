@@ -78,3 +78,5 @@ test_projectif_space
 LinCode
 sd2
 _deps/
+
+build_field.*

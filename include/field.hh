@@ -11,6 +11,7 @@
 #include <boost/functional/hash.hpp>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <memory>
 #include <vector>
 #include <cmath>
@@ -76,6 +77,12 @@ public:
     */
   Fint reduction_polynomial(int i) const;
 
+
+  /**
+    Returns the reduction polynomial of GF
+    */
+  auto get_reduction_polynomial(void) const -> std::vector<Fint>;
+
   
   /**
     Returns i-th element of GF (lexicographical order).
@@ -88,6 +95,16 @@ public:
     Returns all elements of GF, sorted (lexicographical order).
     */
   auto get_all_elements() const -> std::vector<FieldElement>;
+
+
+  /**
+   * Constructs Field from a .txt file. The format is the following one:
+   * p <- the characteristic of the Field
+   * a0 a1 a2 ... an <- the coefficients of the reduction polynomial.
+   *
+   * @param file Path to the .txt file.
+   */
+  static auto parse_field_file(const std::filesystem::path& file) -> Field;
 
 
   // I might change this function.
@@ -152,4 +169,9 @@ inline auto Field::get_order() const -> uint64_t
 inline Fint Field::reduction_polynomial(int i) const
 {
   return reductpoly[i];
+}
+
+inline auto Field::get_reduction_polynomial() const -> std::vector<Fint>
+{
+  return reductpoly;
 }

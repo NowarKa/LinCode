@@ -18,8 +18,9 @@ struct Params
 {
   int delta = 1;
   int a = 1;
-  int field_order = 2;
+  string field_file = "";
   int minimum_weight = 1;
+  int maximum_weight = INT_MAX;
   int upper_bound_n = 10;
   bool check_feasibility = false;
   bool save_results = false;

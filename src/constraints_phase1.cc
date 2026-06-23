@@ -50,13 +50,13 @@ auto check_solution(const vector<int>& solution,
 /* ************************************************************************* */
 auto check_lcode( 
     ConstructedCodesTable& constructed_codes,
-    LCode& code, int d) 
+    LCode& code, int d, int D) 
   -> bool
 {
   if (constructed_codes.contains_code(code))
     return false;
 
-  return code.weight() >= d;
+  return code.weight() >= d && code.weight() <= D;
 }
 
 
@@ -111,11 +111,7 @@ auto construct_lcode_from_solution(const vector<int>& solution,
 /* ************************************************************************* */
 auto call_solvediophant(void) -> void
 {
-  auto command = "./sd2 problem_phase1.txt >> ext.log";
-  /*
-  if (filesystem::file_size("ext.log") > 10 * 1024 * 1024)
-    std::ofstream("ext.log", std::ios::trunc);
-  */
+  auto command = "./sd2 problem_phase1.txt";
   system(command);
 }
 
@@ -265,7 +261,8 @@ auto generate_equations_phase1(ExtensionParams &ext_params,
 
     auto code = construct_lcode_from_solution(solution, p_kp1);
 
-    if (check_lcode(constructed_codes, code, ext_params.params.minimum_weight))
+    if (check_lcode(constructed_codes, code, ext_params.params.minimum_weight, 
+          ext_params.params.maximum_weight))
     {
       extended_code.push(code);
       constructed_codes.insert_code(code);

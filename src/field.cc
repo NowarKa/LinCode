@@ -1,7 +1,11 @@
 #include "field_element.hh"
-#include <memory>
+#include "typedefs.hh"
 #include "field.hh"
 
+#include <filesystem>
+#include <fstream>
+
+/* ************************************************************************* */
 auto Field::get_element(uint64_t index) const -> FieldElement
 {
   FieldElement result(shared_from_this());
@@ -16,6 +20,8 @@ auto Field::get_element(uint64_t index) const -> FieldElement
   return result;
 }
 
+
+/* ************************************************************************* */
 auto Field::get_all_elements() const -> std::vector<FieldElement>
 {
   std::vector<FieldElement> elems;
@@ -24,4 +30,48 @@ auto Field::get_all_elements() const -> std::vector<FieldElement>
     elems.push_back(get_element(i));
 
   return elems;
+}
+
+
+/* ************************************************************************* */
+auto Field::parse_field_file(const filesystem::path& file) -> Field
+{
+  ifstream in(file);
+
+  if (!in)
+    throw runtime_error("Cannot open field file: " + file.string());
+
+  string line;
+
+  if (!getline(in, line))
+    throw runtime_error( "Missing characteristic line.");
+
+  const string characteristic_prefix = "characteristic=";
+
+  if (!line.starts_with(characteristic_prefix))
+    throw runtime_error("Expected characteristic line.");
+
+  int characteristic = stoi(line.substr(characteristic_prefix.size()));
+
+  if (!getline(in, line))
+    throw runtime_error("Missing reduction polynomial line.");
+
+  const string polynomial_prefix = "reduction_polynomial=";
+
+  if (!line.starts_with(polynomial_prefix))
+    throw runtime_error("Expected reduction polynomial line.");
+
+  vector<Fint> coefficients;
+
+  istringstream iss(line.substr(polynomial_prefix.size()));
+
+  Fint coeff;
+
+  while (iss >> coeff)
+    coefficients.push_back(coeff);
+
+  if (coefficients.empty())
+    throw runtime_error("Empty reduction polynomial.");
+
+  return Field(characteristic, coefficients.size(), coefficients);
 }

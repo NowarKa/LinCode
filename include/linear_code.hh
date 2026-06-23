@@ -132,6 +132,16 @@ public:
 
 
   /**
+   * Constructs LCode from canonical form.
+   *
+   * @param canonical_form A given canonical form.
+   * @param field A given field.
+   */
+  static auto from_canonical_form(const string& canonical_form,
+      shared_ptr<const Field> field) -> LCode;
+
+
+  /**
     Outputs an LCode to the standard output.
 
     @param right The LCode on the right of << sign

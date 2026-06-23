@@ -1,5 +1,6 @@
 #include "constraints_phase1.hh"
 #include "constructed_codes_table.hh"
+#include "field.hh"
 #include "field_vector.hh"
 #include "linear_code.hh"
 #include "projective_space.hh"
@@ -20,11 +21,16 @@ int main (int argc, char *argv[])
   app.add_option("--delta", params.delta,
       "Restrict to linear codes whose weights are divisible by delta (default: 1).");
 
-  app.add_flag("-q, --field-order", params.field_order,
-      "Order of the finite field (default: 2).");
+  app.add_option("--field-file", params.field_file,
+      "Path to the field file.")
+    ->required()
+    ->check(CLI::ExistingFile);
 
-  app.add_flag("-d, --minimum-weight", params.minimum_weight,
-      "Minimum minimum distance of the linear codes to classify.");
+  app.add_option("-d, --minimum-weight", params.minimum_weight,
+      "Minimum minimum distance of the linear codes to classify (default: 1).");
+
+  app.add_option("-d, --maximum_weight", params.maximum_weight,
+      "Maximum minimum distance of the linear codes to classify (default: INT_MAX).");
 
   app.add_flag("--check-feasibility", params.check_feasibility,
       "Check the feasibility of solutions with SCIP before enumerating them.");
@@ -42,8 +48,12 @@ int main (int argc, char *argv[])
   auto GF3_ptr = make_shared<const Field>(GF3);
   auto GF4_ptr = make_shared<const Field>(GF4);
 
-  // To change according to the value of q
-  params.field = GF2_ptr;
+  // Constructing Field
+  if (params.field_file != "")
+    params.field = 
+      make_shared<const Field>(Field::parse_field_file(params.field_file));
+  else 
+    params.field = GF2_ptr;
 
   ConstructedCodesTable constructed_codes;
   queue<LCode> extended_code;
@@ -100,7 +110,7 @@ int main (int argc, char *argv[])
   cout << constructed_codes;
 
   if (params.save_results)
-    constructed_codes.save();
+    constructed_codes.save(params.field);
 
   return 0;
 }

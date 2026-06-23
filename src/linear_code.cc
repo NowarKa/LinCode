@@ -193,6 +193,47 @@ auto LCode::weight() const -> uint32_t
 
 
 /* ************************************************************************* */
+auto LCode::from_canonical_form(
+    const string& canonical_form,
+    shared_ptr<const Field> field)
+    -> LCode
+{
+  istringstream in(canonical_form);
+
+  size_t k;
+  size_t n;
+
+  if (!(in >> k >> n))
+    throw runtime_error("Invalid canonical form header.");
+
+  vector<vector<FieldElement>> rows;
+
+  for (size_t i = 0; i < k; i++)
+  {
+    vector<FieldElement> line;
+
+    for (size_t j = 0; j < n; j++)
+    {
+      int value;
+
+      if (!(in >> value))
+        throw runtime_error( "Invalid canonical form matrix.");
+
+      line.push_back(field->get_element(value));
+      // rows[i][j] = field->get_element(value);
+    }
+
+    rows.push_back(line);
+  }
+
+  LCode code(rows);
+  code.canonical_form_ = canonical_form;
+
+  return code;
+}
+
+
+/* ************************************************************************* */
 ostream& operator<<(ostream& output, const LCode& right)
 {
   int n = right.get_nb_rows();

@@ -1,8 +1,13 @@
 #include "constructed_codes_table.hh"
+#include "field.hh"
 #include "linear_code.hh"
 
 #include <fstream>
 #include <iomanip>
+#include <memory>
+#include <queue>
+#include <string>
+#include <string_view>
 
 
 /* ************************************************************************* */
@@ -76,8 +81,8 @@ ostream& operator<<(ostream& output, const ConstructedCodesTable& right)
 
 
 /* ************************************************************************* */
-auto ConstructedCodesTable::save( const std::filesystem::path& directory) 
-  const -> void
+auto ConstructedCodesTable::save(shared_ptr<const Field> field, 
+    const std::filesystem::path& directory) const -> void
 {
   namespace fs = filesystem;
 
@@ -99,6 +104,23 @@ auto ConstructedCodesTable::save( const std::filesystem::path& directory)
     if (!out)
       throw std::runtime_error("Cannot open " + file.string());
 
+    out << "characteristic="
+        << field->get_characteristic()
+        << '\n';
+    out << "reduction_polynomial=";
+
+    const auto& poly = field->get_reduction_polynomial();
+
+    for (size_t i = 0; i < poly.size(); ++i)
+    {
+      if (i)
+        out << ' ';
+
+      out << poly[i];
+    }
+
+    out << "\n\n";
+
     for (const auto& code : codes)
     {
       out << code;
@@ -109,10 +131,75 @@ auto ConstructedCodesTable::save( const std::filesystem::path& directory)
 
 
 /* ************************************************************************* */
-auto ConstructedCodesTable::load(int upper_bound_n, 
+auto ConstructedCodesTable::load_queue(int k, queue<LCode> &extended_code, 
+    shared_ptr<const Field> field) 
+  -> void
+{
+  for (auto &[p, codes] : table_)
+  {
+    auto [n, l] = p;
+
+    if (l != k)
+      continue;
+
+    for (auto &code : codes)
+      extended_code.push(LCode::from_canonical_form(code, field));
+  }
+
+  return;
+}
+
+/* ************************************************************************* */
+struct ParsedFieldInfo
+{
+  int characteristic;
+  vector<Fint> reduction_polynomial;
+};
+
+auto parse_field_header(ifstream& in) -> ParsedFieldInfo
+{
+  ParsedFieldInfo result;
+
+  string line;
+
+  if (!getline(in, line))
+    throw runtime_error("Missing characteristic");
+
+  const string characteristic_prefix = "characteristic=";
+
+  if (!line.starts_with(characteristic_prefix))
+    throw runtime_error("Invalid characteristic line");
+
+  result.characteristic =
+      stoi(line.substr(characteristic_prefix.size()));
+
+  if (!getline(in, line))
+    throw runtime_error("Missing reduction polynomial");
+
+  const string polynomial_prefix = "reduction_polynomial=";
+
+  if (!line.starts_with(polynomial_prefix))
+    throw runtime_error("Invalid reduction polynomial line");
+
+  istringstream iss(
+      line.substr(polynomial_prefix.size()));
+
+  Fint coeff;
+
+  while (iss >> coeff)
+    result.reduction_polynomial.push_back(coeff);
+
+  getline(in, line);
+
+  return result;
+}
+
+
+auto ConstructedCodesTable::load(
+    int upper_bound_n,
     const filesystem::path& directory) -> void
 {
-  namespace fs = std::filesystem;
+  namespace fs = filesystem;
 
   for (const auto& entry : fs::directory_iterator(directory))
   {
@@ -120,6 +207,7 @@ auto ConstructedCodesTable::load(int upper_bound_n,
       continue;
 
     auto stem = entry.path().stem().string();
+
     size_t pos = stem.find('_');
 
     if (pos == string::npos)
@@ -132,6 +220,13 @@ auto ConstructedCodesTable::load(int upper_bound_n,
       continue;
 
     ifstream in(entry.path());
+
+    if (!in)
+      throw runtime_error("Cannot open " + entry.path().string());
+
+    ParsedFieldInfo field_info =
+        parse_field_header(in);
+
     string line;
     string current;
 
@@ -141,7 +236,7 @@ auto ConstructedCodesTable::load(int upper_bound_n,
       {
         if (!current.empty())
         {
-          table_[{n,k}].insert(current);
+          table_[{n, k}].insert(current);
           current.clear();
         }
       }
@@ -150,11 +245,13 @@ auto ConstructedCodesTable::load(int upper_bound_n,
         current += line;
         current += '\n';
       }
-    } // end while
+    }
 
     if (!current.empty())
-      table_[{n,k}].insert(current);
-  } // end for
+      table_[{n, k}].insert(current);
 
-  // return result;
+    auto field = Field(field_info.characteristic, 
+        field_info.reduction_polynomial.size(),
+        field_info.reduction_polynomial);
+  }
 }

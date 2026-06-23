@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.23...3.31.6)
 
 project(LinCode LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -68,6 +68,7 @@ add_library(LinCodeLibrary
   src/projective_point.cc
   src/constructed_codes_table.cc
   src/phase0.cc
+  src/build_field.cc
 )
 
 target_include_directories(LinCodeLibrary PUBLIC

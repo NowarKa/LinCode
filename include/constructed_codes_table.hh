@@ -1,9 +1,12 @@
 #pragma once
 
+#include "field.hh"
 #include "linear_code.hh"
 
 #include <climits>
 #include <cstddef>
+#include <memory>
+#include <queue>
 #include <unordered_map>
 #include <unordered_set>
 #include <iostream>
@@ -67,7 +70,8 @@ public:
 
     @param directory Directrory's name.
    */
-  auto save(const filesystem::path& directory = "data") const -> void;
+  auto save(shared_ptr<const Field> field, 
+      const filesystem::path& directory = "data") const -> void;
 
 
   /**
@@ -75,6 +79,16 @@ public:
    */
   auto load(int upper_bound_n = INT_MAX, 
       const filesystem::path& directory = "data") -> void;
+
+
+  /**
+   * Loads all codes of dimension [n', k] to queue to start classifcation.
+   *
+   * @param k A given integer.
+   * @param extended_code A given queue.
+   */
+  auto load_queue(int k, queue<LCode> &extended_code, 
+      shared_ptr<const Field> field) -> void;
 
 
   /**
