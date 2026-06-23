@@ -23,13 +23,12 @@ int main (int argc, char *argv[])
 
   app.add_option("--field-file", params.field_file,
       "Path to the field file.")
-    ->required()
     ->check(CLI::ExistingFile);
 
-  app.add_option("-d, --minimum-weight", params.minimum_weight,
+  app.add_option("--minimum-weight", params.minimum_weight,
       "Minimum minimum distance of the linear codes to classify (default: 1).");
 
-  app.add_option("-d, --maximum_weight", params.maximum_weight,
+  app.add_option("--maximum-weight", params.maximum_weight,
       "Maximum minimum distance of the linear codes to classify (default: INT_MAX).");
 
   app.add_flag("--check-feasibility", params.check_feasibility,
@@ -37,6 +36,12 @@ int main (int argc, char *argv[])
 
   app.add_flag("--save-results", params.save_results,
       "Save the classified codes to disk.");
+
+  app.add_option("--load", params.k, "Load saved results and initialize the "
+      "queue with all saved codes of dimension [n', k] (k is fixed).");
+
+  app.add_option("--ubn", params.upper_bound_n, "Classify codes of dimension [n, k] "
+      "where n <= ubn (default: 6).");
 
   CLI11_PARSE(app, argc, argv);
 
@@ -48,6 +53,9 @@ int main (int argc, char *argv[])
   auto GF3_ptr = make_shared<const Field>(GF3);
   auto GF4_ptr = make_shared<const Field>(GF4);
 
+  ConstructedCodesTable constructed_codes;
+  queue<LCode> extended_code;
+
   // Constructing Field
   if (params.field_file != "")
     params.field = 
@@ -55,34 +63,42 @@ int main (int argc, char *argv[])
   else 
     params.field = GF2_ptr;
 
-  ConstructedCodesTable constructed_codes;
-  queue<LCode> extended_code;
-
-  params.upper_bound_n = 6;
-  params.minimum_weight = 3;
-
-  cout << "Adding one-dimensional linear codes...\n";
-  for (size_t n = 2; n < params.upper_bound_n; n++)
+  // Loading results and initializing the queue
+  if (params.k != 0)
   {
-    auto ps = ProjectiveSpace(n, params.field);
-
-    for (auto& p : ps.get_all_points())
-    {
-      auto w = weight(p.get_coordinates());
-      if (w >= params.minimum_weight && w % params.delta == 0)
-      {
-        // cout << "n is now " << n << endl;
-        // cout << "Code added with weight " << w << endl;
-        auto code = LCode({p.get_coordinates()});
-        extended_code.push(code);
-        constructed_codes.insert_code(code);
-      }
-    }
+    constructed_codes.load();
+    constructed_codes.load_queue(params.k, extended_code, params.field);
   }
 
-  cout << "Done\n";
 
-  while (!extended_code.empty()) {
+  else 
+  {
+    cout << "Adding one-dimensional linear codes...\n";
+    for (size_t n = 2; n < params.upper_bound_n; n++)
+    {
+      auto ps = ProjectiveSpace(n, params.field);
+
+      for (auto& p : ps.get_all_points())
+      {
+        auto w = weight(p.get_coordinates());
+        if (w >= params.minimum_weight && w % params.delta == 0)
+        {
+          // cout << "n is now " << n << endl;
+          // cout << "Code added with weight " << w << endl;
+          auto code = LCode({p.get_coordinates()});
+          extended_code.push(code);
+          constructed_codes.insert_code(code);
+        } // end if
+      } // end for
+    } // end for
+
+    cout << "Done\n";
+  } // end else
+
+
+  // Engine of classification
+  while (!extended_code.empty()) 
+  {
     auto c = extended_code.front();
     extended_code.pop();
 

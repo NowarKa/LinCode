@@ -21,7 +21,8 @@ struct Params
   string field_file = "";
   int minimum_weight = 1;
   int maximum_weight = INT_MAX;
-  int upper_bound_n = 10;
+  int upper_bound_n = 6;
+  int k = 0;
   bool check_feasibility = false;
   bool save_results = false;
   shared_ptr<const Field> field;
