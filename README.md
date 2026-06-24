@@ -40,8 +40,6 @@ To build this project you will need:
 
 - C++20 compiler.
 - CMake >= 3.15.
-- Sage binary.
-- Solvediophant binary.
 
 From the root directory of this project:
 
@@ -55,7 +53,11 @@ This will produce the `LinCode` executable.
 
 ## Running
 
- 
+To run this project you will need:
+
+- Sage binary.
+- Solvediophant binary.
+
 Running the following command:
 
 ```bash
