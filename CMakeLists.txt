@@ -33,18 +33,19 @@ if(ENABLE_ASAN)
   set(ENV{ASAN_OPTIONS} "detect_leaks=1:halt_on_error=1")
 endif()
 
+
 #################################
 ###### FiniteField Library ######
 #################################
 
 add_subdirectory(finite_field)
 
+
 #################################
 ######## LinCode Library ########
 #################################
 
 add_library(LinCodeLibrary
-
   src/constraints_phase1.cc
   src/constructed_codes_table.cc
   src/linear_code.cc
@@ -68,6 +69,7 @@ target_link_libraries(LinCodeLibrary
   CLI11::CLI11
 )
 
+
 #################################
 ####### LinCode Executable ######
 #################################
@@ -81,12 +83,6 @@ target_link_libraries(LinCode
   LinCodeLibrary
 )
 
-#################################
-######## Main project tests #####
-#################################
-
-# add_executable(...)
-# target_link_libraries(...)
 
 #################################
 ######## Utility targets ########
