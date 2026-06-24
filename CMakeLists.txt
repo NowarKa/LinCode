@@ -33,53 +33,37 @@ if(ENABLE_ASAN)
   set(ENV{ASAN_OPTIONS} "detect_leaks=1:halt_on_error=1")
 endif()
 
-add_compile_options(
-  -L/usr/local/lib
-  -lscip
-  )
 #################################
-###### GaloisField Library ######
+###### FiniteField Library ######
 #################################
 
-#file(GLOB GALOIS_SOURCES CONFIGURE_DEPENDS
-#  finite_field/*.cc
-#)
-
-#add_library(GaloisField STATIC ${GALOIS_SOURCES})
-
-#target_include_directories(GaloisField PUBLIC
-#  ${CMAKE_SOURCE_DIR}/finite_field
-#)
+add_subdirectory(finite_field)
 
 #################################
 ######## LinCode Library ########
 #################################
 
 add_library(LinCodeLibrary
-  src/field.cc
-  src/modular_arith.cc
-  src/polynomial_arith.cc
-  src/field_element.cc
-  src/constraints_phase1.cc  
-  src/field_vector.cc
-  src/hyperplane.cc
-  src/linear_code.cc
-  src/projective_space.cc
-  src/projective_point.cc
+
+  src/constraints_phase1.cc
   src/constructed_codes_table.cc
+  src/linear_code.cc
   src/phase0.cc
-  src/build_field.cc
 )
 
-target_include_directories(LinCodeLibrary PUBLIC
+target_include_directories(LinCodeLibrary
+  PUBLIC
   ${CMAKE_SOURCE_DIR}/include
 )
 
-target_link_directories(LinCodeLibrary PRIVATE
+target_link_directories(LinCodeLibrary
+  PRIVATE
   /usr/local/lib
 )
 
-target_link_libraries(LinCodeLibrary PUBLIC
+target_link_libraries(LinCodeLibrary
+  PUBLIC
+  FiniteField
   scip
   CLI11::CLI11
 )
@@ -88,46 +72,30 @@ target_link_libraries(LinCodeLibrary PUBLIC
 ####### LinCode Executable ######
 #################################
 
-add_executable(LinCode src/main.cc)
-
-target_link_libraries(LinCode PRIVATE 
-  LinCodeLibrary
-  #GaloisField
+add_executable(LinCode
+  src/main.cc
 )
 
-#################################
-####### Finte Field tests #######
-#################################
-
-add_executable(test_field
-    tests/test_field.cc
-)
-
-target_link_libraries(test_field PRIVATE 
-  LinCodeLibrary
-  #GaloisField
-)
-
-target_compile_features(test_field PRIVATE cxx_std_17)
-
-#################################
-##### Projectif Space tests #####
-#################################
-
-add_executable(test_projectif_space
-    tests/test_projectif_space.cc
-)
-
-target_link_libraries(test_projectif_space PRIVATE 
+target_link_libraries(LinCode
+  PRIVATE
   LinCodeLibrary
 )
 
-target_compile_features(test_projectif_space PRIVATE cxx_std_17)
+#################################
+######## Main project tests #####
+#################################
+
+# add_executable(...)
+# target_link_libraries(...)
+
+#################################
+######## Utility targets ########
+#################################
 
 add_custom_target(output_clean
-    COMMAND rm -f solutions problem_phase1.txt
+  COMMAND rm -f solutions problem_phase1.txt
 )
 
 add_custom_target(data_clean
-    COMMAND rm -rf data/
+  COMMAND rm -rf data/
 )
