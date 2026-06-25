@@ -24,7 +24,7 @@ auto normalize(const FieldVector& v) -> FieldVector
 
 
 /* ************************************************************************* */
-auto weight(const FieldVector &v) -> int
+auto hamming_weight(const FieldVector &v) -> int
 {
   int w = 0;
 

@@ -80,3 +80,6 @@ sd2
 _deps/
 
 build_field.*
+finite_field/test_projective_space
+finite_field/test_field
+temp/

@@ -6,7 +6,9 @@
 #include "projective_space.hh"
 
 #include <cstdlib>
+#include <filesystem>
 #include <memory>
+#include <string>
 #include <vector>
 #include <queue>
 #include <iostream>
@@ -46,6 +48,10 @@ int main (int argc, char *argv[])
   app.add_option("--ubn", params.upper_bound_n, "Classify linear codes of "
       "dimension [n, k] for all lengths n <= ubn (default: 6).");
 
+  app.add_option("--job-id", params.job_id);
+
+  app.add_option("--nb-jobs", params.nb_jobs);
+
   CLI11_PARSE(app, argc, argv);
 
   const Field GF4 = Field(2, 2, {1,1,1});
@@ -58,6 +64,17 @@ int main (int argc, char *argv[])
 
   ConstructedCodesTable constructed_codes;
   queue<LCode> extended_code;
+
+
+  // Adding the directory in which solvediophant will work and 
+  // the solutions will be added
+  {
+    if (!filesystem::exists("temp/"))
+      system("mkdir temp");
+
+    if (!filesystem::exists("temp/job_" + to_string(params.job_id)))
+      system(("mkdir temp/job_" + to_string(params.job_id)).c_str());
+  }
 
   // Constructing Field
   if (params.field_file != "")
@@ -84,7 +101,7 @@ int main (int argc, char *argv[])
 
       for (auto& p : ps.get_all_points())
       {
-        auto w = weight(p.get_coordinates());
+        auto w = hamming_weight(p.get_coordinates());
         if (w >= params.minimum_weight && w % params.delta == 0)
         {
           // cout << "n is now " << n << endl;

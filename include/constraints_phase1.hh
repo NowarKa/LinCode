@@ -23,6 +23,8 @@ struct Params
   int maximum_weight = INT_MAX;
   int upper_bound_n = 6;
   int k = 0;
+  int job_id = 0;
+  int nb_jobs = 1;
   bool check_feasibility = false;
   bool save_results = false;
   shared_ptr<const Field> field;

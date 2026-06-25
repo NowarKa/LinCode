@@ -45,7 +45,8 @@ auto transpose(const vector<vector<FieldElement>>& matrix)
 /* ************************************************************************* */
 LCode::LCode(const vector<vector<FieldElement>>& rows) : 
   rows_(rows), 
-  columns_(transpose(rows))
+  columns_(transpose(rows)), 
+  weight_enumerator_({})
 {}
 
 
@@ -97,6 +98,31 @@ auto LCode::to_multiset() const -> unordered_map<ProjectivePoint, uint32_t>
       multiset.at(p)++;
   }
   return multiset;
+}
+
+
+/* ************************************************************************* */
+auto LCode::get_weight_enumerator() -> vector<int>
+{
+  if (!weight_enumerator_.empty())
+    return weight_enumerator_;
+
+  weight_enumerator_ = vector<int>(get_nb_columns()+1, 0);
+
+  auto ps = ProjectiveSpace(get_nb_rows(), rows_[0][0].get_field());
+  auto points = ps.get_all_points();
+
+  for (const auto& p : points)
+  {
+    auto encoded = encode_column_vector(p.get_coordinates());
+    int h = hamming_weight(encoded);
+    
+    if (h > 0)
+      weight_enumerator_[h]++;
+
+  }
+
+  return weight_enumerator_;
 }
 
 
@@ -155,40 +181,15 @@ auto LCode::encode_column_vector(const vector<FieldElement>& u) const
 
 
 /* ************************************************************************* */
-auto hamming_weight(const FieldVector& u) -> int
+auto LCode::minimum_distance() -> uint32_t
 {
-  int d = 0;
+  auto we = get_weight_enumerator();
 
-  if (u.empty())
-    return d;
+  for (size_t i = 1; i < we.size(); i++)
+    if (we[i] > 0)
+      return i;
 
-  FieldElement zero = u[0].get_field()->get_element(0);
-
-  for (auto x : u)
-    if (x != zero)
-      d++;
-  return d;
-}
-
-
-/* ************************************************************************* */
-auto LCode::weight() const -> uint32_t
-{
-  auto ps = ProjectiveSpace(get_nb_rows(), rows_[0][0].get_field());
-  auto points = ps.get_all_points();
-
-  int d = get_nb_columns();
-
-  for (const auto& p : points)
-  {
-    auto encoded = encode_column_vector(p.get_coordinates());
-    int h = hamming_weight(encoded);
-    
-    if (h > 0)
-      d = min(d, h);
-
-  }
-  return d;
+  return 0;
 }
 
 

@@ -16,8 +16,11 @@
 #include <iterator>
 #include <memory>
 #include <stdexcept>
+#include <string>
+#include <thread>
 #include <vector>
 #include <sstream>
+#include <format>
 
 
 /* ************************************************************************* */
@@ -50,23 +53,31 @@ auto check_solution(const vector<int>& solution,
 /* ************************************************************************* */
 auto check_lcode( 
     ConstructedCodesTable& constructed_codes,
-    LCode& code, int d, int D) 
+    LCode& code, int min_d, int max_d, int D) 
   -> bool
 {
   if (constructed_codes.contains_code(code))
     return false;
 
-  return code.weight() >= d && code.is_codeword_weight_divisible(D);
+  return code.minimum_distance() >= min_d && 
+     code.minimum_distance() <= max_d && 
+    code.is_codeword_weight_divisible(D);
 }
 
 
 /* ************************************************************************* */
-auto parse_solution() -> vector<vector<int>>
+auto parse_solution(ExtensionParams &ext_params) -> vector<vector<int>>
 {
+  auto solution_filename = 
+    "temp/job_" + 
+    to_string(ext_params.params.job_id) + 
+    "/solutions.txt";
+
   vector<vector<int>> solutions;
-  ifstream file("solutions");
+  ifstream file(solution_filename);
+
   if (!file)
-    throw runtime_error("Failed to open file solutions");
+    throw runtime_error("Failed to open file " + solution_filename);
 
   string line;
   while (getline(file, line))
@@ -109,10 +120,24 @@ auto construct_lcode_from_solution(const vector<int>& solution,
 
 
 /* ************************************************************************* */
-auto call_solvediophant(void) -> void
+auto call_solvediophant(ExtensionParams &ext_params) -> void
 {
-  auto command = "./sd2 problem_phase1.txt";
-  system(command);
+  auto solution_filename = 
+    "temp/job_" + 
+    to_string(ext_params.params.job_id) + 
+    "/solutions.txt";
+
+  auto problem_filename = 
+    "temp/job_" + 
+    to_string(ext_params.params.job_id) + 
+    "/problem.txt";
+
+  auto command = 
+    "./sd2 -o" + 
+    solution_filename + 
+    " " + problem_filename;
+
+  system(command.c_str());
 }
 
 
@@ -229,7 +254,14 @@ auto generate_equations_phase1(ExtensionParams &ext_params,
 
   // Writing problem to file
   ofstream problem_phase1;
-  problem_phase1.open("problem_phase1.txt");
+
+  auto problem_filename = 
+    "temp/job_" + 
+    to_string(ext_params.params.job_id) + 
+    "/problem.txt";
+
+  problem_phase1.open(problem_filename);
+
   // Adding problem's dimensions
   problem_phase1 << system.A.size() << " " << system.A[0].size() << " " << 1 << endl;
 
@@ -250,8 +282,8 @@ auto generate_equations_phase1(ExtensionParams &ext_params,
 
   problem_phase1.close();
 
-  call_solvediophant();
-  auto solutions = parse_solution();
+  call_solvediophant(ext_params);
+  auto solutions = parse_solution(ext_params);
 
   for (const auto& solution : solutions)
   {
@@ -262,7 +294,7 @@ auto generate_equations_phase1(ExtensionParams &ext_params,
     auto code = construct_lcode_from_solution(solution, p_kp1);
 
     if (check_lcode(constructed_codes, code, ext_params.params.minimum_weight, 
-          ext_params.params.maximum_weight))
+          ext_params.params.maximum_weight, ext_params.params.delta))
     {
       extended_code.push(code);
       constructed_codes.insert_code(code);

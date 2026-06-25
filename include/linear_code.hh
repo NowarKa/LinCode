@@ -74,6 +74,12 @@ public:
 
 
   /**
+   * Returns the LCode's weight enumerator.
+   */
+  auto get_weight_enumerator() -> vector<int>;
+
+
+  /**
     Returns LCode's multiset.
     
     Starting from a generator matrix of a linear code we obtain a multiset 
@@ -92,7 +98,7 @@ public:
   /**
     Returns the minimal distance of LCode.
    */
-  auto weight() const -> uint32_t;
+  auto minimum_distance() -> uint32_t;
 
 
   /**
@@ -164,6 +170,7 @@ private:
   vector<vector<FieldElement>> rows_;
   string canonical_form_ = "";
   int minimum_column_multiplicity_ = 0;
+  vector<int> weight_enumerator_;
 };
 
 

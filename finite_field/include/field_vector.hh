@@ -34,7 +34,7 @@ auto normalize(const FieldVector& v) -> FieldVector;
 
   @param v The vector whose weight is returned.
  */
-auto weight(const FieldVector& v ) -> int;
+auto hamming_weight(const FieldVector &v) -> int;
 
 
 /**
