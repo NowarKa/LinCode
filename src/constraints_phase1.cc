@@ -17,10 +17,8 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <thread>
 #include <vector>
 #include <sstream>
-#include <format>
 
 
 /* ************************************************************************* */
@@ -118,7 +116,7 @@ auto construct_lcode_from_solution(const vector<int>& solution,
       matrix.push_back(p_kp1[i].get_coordinates());
   }
 
-  return construct_from_columns(matrix);
+  return LCode::construct_from_columns(matrix);
 }
 
 

@@ -157,6 +157,15 @@ public:
 
 
   /**
+   * Constructs LCode from columns.
+   *
+   * @param columns The set of *COLUMNS*
+   */
+  static auto construct_from_columns(
+      const vector<vector<FieldElement>>& columns) -> LCode;
+
+
+  /**
     Outputs an LCode to the standard output.
 
     @param right The LCode on the right of << sign
@@ -171,11 +180,20 @@ private:
   string canonical_form_ = "";
   int minimum_column_multiplicity_ = 0;
   vector<int> weight_enumerator_;
+  unordered_map<int, vector<int>> minimum_weight_enumerator_extension_;
 };
 
 
-auto construct_from_columns(const vector<vector<FieldElement>>& columns) 
-  -> LCode;
+// Hash function for LCode in order to use unordered_map.
+// Two LCodes are equals if they are equivalent.
+template<> struct std::hash<LCode> {
+  size_t operator()(LCode& lc) const noexcept 
+  {
+    size_t h = hash<string>{}(lc.canonical_form());
+    return h;
+  }
+};
+
 
 inline auto LCode::get_nb_columns() const -> size_t
 {

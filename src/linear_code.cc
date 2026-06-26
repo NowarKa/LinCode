@@ -51,7 +51,7 @@ LCode::LCode(const vector<vector<FieldElement>>& rows) :
 
 
 /* ************************************************************************* */
-auto construct_from_columns(const vector<vector<FieldElement>>& columns) 
+auto LCode::construct_from_columns(const vector<vector<FieldElement>>& columns)
   -> LCode
 {
   return LCode(transpose(columns));
