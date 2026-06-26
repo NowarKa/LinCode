@@ -53,15 +53,18 @@ auto check_solution(const vector<int>& solution,
 /* ************************************************************************* */
 auto check_lcode( 
     ConstructedCodesTable& constructed_codes,
-    LCode& code, int min_d, int max_d, int D) 
+    LCode& code, ExtensionParams &ext_params) 
   -> bool
 {
+  if (code.get_minimum_column_multiplicity() != ext_params.r)
+    return false;
+
   if (constructed_codes.contains_code(code))
     return false;
 
-  return code.minimum_distance() >= min_d && 
-     code.minimum_distance() <= max_d && 
-    code.is_codeword_weight_divisible(D);
+  return code.minimum_distance() >= ext_params.params.minimum_weight && 
+     code.minimum_distance() <= ext_params.params.maximum_weight && 
+    code.is_codeword_weight_divisible(ext_params.params.delta);
 }
 
 
@@ -293,8 +296,7 @@ auto generate_equations_phase1(ExtensionParams &ext_params,
 
     auto code = construct_lcode_from_solution(solution, p_kp1);
 
-    if (check_lcode(constructed_codes, code, ext_params.params.minimum_weight, 
-          ext_params.params.maximum_weight, ext_params.params.delta))
+    if (check_lcode(constructed_codes, code, ext_params))
     {
       extended_code.push(code);
       constructed_codes.insert_code(code);
