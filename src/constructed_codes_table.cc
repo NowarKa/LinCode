@@ -15,7 +15,7 @@ auto ConstructedCodesTable::insert_code(LCode& code) -> void
   size_t n = code.get_nb_columns();
   size_t k = code.get_nb_rows();
 
-  table_[{n, k}].insert(code.canonical_form());
+  table_[{n, k}].insert(code);
 
   return;
 }
@@ -32,9 +32,32 @@ auto ConstructedCodesTable::contains_code(LCode& code) -> bool
 
   auto cn_code = code.canonical_form();
 
-  for (const auto& s : table_.at({n, k})) 
-    if (s == cn_code)
+  for (auto& s : table_.at({n, k})) 
+    if (s.canonical_form() == cn_code)
       return true;
+
+  return false;
+}
+
+
+/* ************************************************************************* */
+auto ConstructedCodesTable::contains_code_and_update(LCode &basic_code, 
+    LCode &extended_code) -> bool
+{
+  size_t n = extended_code.get_nb_columns();
+  size_t k = extended_code.get_nb_rows();
+
+  if (table_.find({n, k}) == table_.end())
+    return false;
+
+  auto cn_code = extended_code.canonical_form();
+
+  for (auto& s : table_.at({n, k})) 
+    if (s.canonical_form() == cn_code)
+    {
+      s.updates_minimum_weight_enumerator_extension(basic_code);
+      return true;
+    }
 
   return false;
 }
@@ -142,7 +165,7 @@ auto ConstructedCodesTable::load_queue(int k, queue<LCode> &extended_code,
       continue;
 
     for (auto &code : codes)
-      extended_code.push(LCode::from_canonical_form(code, field));
+      extended_code.push(code);
   }
 
   return;
@@ -195,6 +218,7 @@ auto parse_field_header(ifstream& in) -> ParsedFieldInfo
 
 
 auto ConstructedCodesTable::load(
+    shared_ptr<const Field> field,
     int upper_bound_n,
     const filesystem::path& directory) -> void
 {
@@ -235,7 +259,7 @@ auto ConstructedCodesTable::load(
       {
         if (!current.empty())
         {
-          table_[{n, k}].insert(current);
+          table_[{n, k}].insert(LCode::from_canonical_form(current, field));
           current.clear();
         }
       }
@@ -247,7 +271,7 @@ auto ConstructedCodesTable::load(
     }
 
     if (!current.empty())
-      table_[{n, k}].insert(current);
+      table_[{n, k}].insert(LCode::from_canonical_form(current, field));
 
     /*
     auto field = Field(field_info.characteristic, 

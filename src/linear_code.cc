@@ -102,7 +102,7 @@ auto LCode::to_multiset() const -> unordered_map<ProjectivePoint, uint32_t>
 
 
 /* ************************************************************************* */
-auto LCode::get_weight_enumerator() -> vector<int>
+auto LCode::get_weight_enumerator() const -> vector<int>
 {
   if (!weight_enumerator_.empty())
     return weight_enumerator_;
@@ -123,6 +123,63 @@ auto LCode::get_weight_enumerator() -> vector<int>
   }
 
   return weight_enumerator_;
+}
+
+
+/* ************************************************************************* */
+auto is_weight_enumerator_smaller(vector<int> &smaller, vector<int> &greater) 
+  -> bool
+{
+  auto minimum_length = min(smaller.size(), greater.size());
+  auto is_equal = true;
+
+  for (size_t i = 0; i < minimum_length; i++)
+  {
+    if (smaller[i] > greater[i])
+      return false;
+
+    if (smaller[i] != greater[i])
+      is_equal = false;
+  }
+
+  if (is_equal)
+    return smaller.size() <= minimum_length;
+
+  return true;
+}
+
+auto LCode::updates_minimum_weight_enumerator_extension(LCode &code) const 
+  -> void
+{
+  int r = code.get_nb_columns() - get_nb_columns();
+
+  auto find_r = minimum_weight_enumerator_extension_.find(r);
+  auto we = code.get_weight_enumerator();
+
+  if (find_r == minimum_weight_enumerator_extension_.end())
+    minimum_weight_enumerator_extension_[r] = we;
+
+  else if (is_weight_enumerator_smaller(we, find_r->second))
+    minimum_weight_enumerator_extension_[r] = we;
+
+  return;
+}
+
+
+/* ************************************************************************* */
+auto LCode::should_extend(int r) const -> bool
+{
+  auto find_r = minimum_weight_enumerator_extension_.find(r);
+
+  if (find_r == minimum_weight_enumerator_extension_.end())
+    return true;
+
+  auto we = get_weight_enumerator();
+
+  if (!is_weight_enumerator_smaller(find_r->second, we))
+    return true;
+
+  return false;
 }
 
 
@@ -294,7 +351,14 @@ ostream& operator<<(ostream& output, const LCode& right)
 
 
 /* ************************************************************************* */
-auto LCode::canonical_form(const string& sage_binary) -> const string
+bool operator==(const LCode& left, const LCode& right)
+{
+  return left.canonical_form() == right.canonical_form();
+}
+
+
+/* ************************************************************************* */
+auto LCode::canonical_form(const string& sage_binary) const -> const string
 {
   namespace fs = filesystem;
 

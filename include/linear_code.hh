@@ -74,9 +74,9 @@ public:
 
 
   /**
-   * Returns the LCode's weight enumerator.
+   * Returns LCode's weight enumerator.
    */
-  auto get_weight_enumerator() -> vector<int>;
+  auto get_weight_enumerator() const -> vector<int>;
 
 
   /**
@@ -113,7 +113,19 @@ public:
   /**
     Returns LCode's canonical form.
    */
-  auto canonical_form(const string& sage_binary = "sage") -> const string;
+  auto canonical_form(const string& sage_binary = "sage") const -> const string;
+
+
+  /**
+   * Updates minimum_weight_enumerator_extension_.
+   *
+   * @param code LCode.
+   */
+  auto updates_minimum_weight_enumerator_extension(LCode& code)  const -> void;
+
+
+  // TODO: Add disription
+  auto should_extend(int r) const -> bool;
 
 
   /**
@@ -174,20 +186,23 @@ public:
    */
   friend ostream& operator<<(ostream& output, const LCode& right);
 
+
+  friend bool operator==(const LCode& left, const LCode& right);
+
 private:
   vector<vector<FieldElement>> columns_;
   vector<vector<FieldElement>> rows_;
-  string canonical_form_ = "";
+  mutable string canonical_form_ = "";
   int minimum_column_multiplicity_ = 0;
-  vector<int> weight_enumerator_;
-  unordered_map<int, vector<int>> minimum_weight_enumerator_extension_;
+  mutable vector<int> weight_enumerator_;
+  mutable unordered_map<int, vector<int>> minimum_weight_enumerator_extension_;
 };
 
 
 // Hash function for LCode in order to use unordered_map.
 // Two LCodes are equals if they are equivalent.
-template<> struct std::hash<LCode> {
-  size_t operator()(LCode& lc) const noexcept 
+template<> struct std::hash<LCode> { 
+size_t operator()(const LCode& lc) const noexcept 
   {
     size_t h = hash<string>{}(lc.canonical_form());
     return h;

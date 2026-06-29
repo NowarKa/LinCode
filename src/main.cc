@@ -87,7 +87,7 @@ int main (int argc, char *argv[])
   if (params.k != 0)
   {
     cout << "Loading existing results...\n";
-    constructed_codes.load();
+    constructed_codes.load(params.field);
     constructed_codes.load_queue(params.k, extended_code, params.field);
   }
 

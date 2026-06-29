@@ -57,7 +57,7 @@ auto check_lcode(
   if (code.get_minimum_column_multiplicity() != ext_params.r)
     return false;
 
-  if (constructed_codes.contains_code(code))
+  if (constructed_codes.contains_code_and_update(ext_params.lcode, code))
     return false;
 
   return code.minimum_distance() >= ext_params.params.minimum_weight && 
@@ -311,6 +311,9 @@ auto extend_code(LCode& code, Params &params, queue<LCode>& extended_code,
 {
   for (int r = 1; r <= code.get_minimum_column_multiplicity() + 1; r++)
   {
+    if (!code.should_extend(r))
+      continue;
+
     int b = code.get_nb_columns() + r;
     ExtensionParams ext_params = {params, params.a, b, r, code};
     generate_equations_phase1(ext_params, extended_code, constructed_codes);

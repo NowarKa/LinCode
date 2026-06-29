@@ -65,6 +65,18 @@ public:
 
 
   /**
+    Returns true if ConstructedCodesTable contains a given linear code, and 
+    false otherwise. Update the field `minimum_weight_enumerator_extension_` 
+    of ConstructedCodesTable's LCodes in order to keep the smallest weight 
+    enumerator (lexicographical order).
+
+    @param code A specified linear code.
+   */
+  auto contains_code_and_update(LCode &basic_code, LCode &extended_code) 
+    -> bool;
+
+
+  /**
     Saves ConstructedCodesTable's content to disk. By default, files are stored 
     in `data/` folder.
 
@@ -77,7 +89,8 @@ public:
   /**
     Loads ConstructedCodesTable's content from files.
    */
-  auto load(int upper_bound_n = INT_MAX, 
+  auto load(shared_ptr<const Field> field,
+      int upper_bound_n = INT_MAX, 
       const filesystem::path& directory = "data") -> void;
 
 
@@ -101,5 +114,5 @@ public:
       const ConstructedCodesTable& right);
 
 private:
-  unordered_map<pair<size_t, size_t>, unordered_set<string>> table_;
+  unordered_map<pair<size_t, size_t>, unordered_set<LCode>> table_;
 };
