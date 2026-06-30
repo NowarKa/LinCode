@@ -2,6 +2,7 @@
 #include "field.hh"
 #include "linear_code.hh"
 
+#include <algorithm>
 #include <fstream>
 #include <iomanip>
 #include <memory>
@@ -170,6 +171,79 @@ auto ConstructedCodesTable::load_queue(int k, queue<LCode> &extended_code,
 
   return;
 }
+
+
+/* ************************************************************************* */
+auto ConstructedCodesTable::merge_list(
+    const vector<ConstructedCodesTable> &results, 
+    int k0) 
+  -> void
+{
+  for (const auto &result : results)
+    for (const auto &[nk, codes] : result.table_)
+    {
+      auto [n, k] = nk;
+
+      if (k != k0)
+        continue;
+
+      for (const auto &code : codes)
+        table_[nk].insert(code);
+    }
+
+  return;
+}
+
+
+/* ************************************************************************* */
+auto ConstructedCodesTable::split_by_weight_enumerator(
+    int k0,
+    int nb_thread)
+  -> vector<vector<LCode>>
+{
+  unordered_map<string, vector<LCode>> groups;
+
+  for (const auto& [nk, codes] : table_)
+  {
+    auto [n, k] = nk;
+
+    if (k != k0)
+      continue;
+
+
+    for (const auto& code : codes)
+    {
+      string key;
+
+      for (auto x : code.get_weight_enumerator())
+      {
+        key += to_string(x);
+        key += ',';
+      }
+
+      groups[key].push_back(code);
+    } // end for
+  } // end for
+
+  vector<vector<LCode>> jobs(nb_thread);
+  vector<size_t> loads(nb_thread, 0);
+
+  for (auto& [key, group] : groups)
+  {
+    auto it = min_element(loads.begin(), loads.end());
+    size_t thread_id = distance(loads.begin(), it);
+
+    jobs[thread_id].insert(
+        jobs[thread_id].end(),
+        group.begin(),
+        group.end());
+
+    loads[thread_id] += group.size();
+  }
+
+  return jobs;
+}
+
 
 /* ************************************************************************* */
 struct ParsedFieldInfo

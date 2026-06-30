@@ -6,6 +6,7 @@
 #include "projective_space.hh"
 
 #include <cstdlib>
+#include <execution>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -48,9 +49,7 @@ int main (int argc, char *argv[])
   app.add_option("--ubn", params.upper_bound_n, "Classify linear codes of "
       "dimension [n, k] for all lengths n <= ubn (default: 6).");
 
-  app.add_option("--job-id", params.job_id);
-
-  app.add_option("--nb-jobs", params.nb_jobs);
+  app.add_option("--nb-threads", params.nb_threads);
 
   CLI11_PARSE(app, argc, argv);
 
@@ -63,7 +62,6 @@ int main (int argc, char *argv[])
   auto GF4_ptr = make_shared<const Field>(GF4);
 
   ConstructedCodesTable constructed_codes;
-  queue<LCode> extended_code;
 
 
   // Adding the directory in which solvediophant will work and 
@@ -72,8 +70,9 @@ int main (int argc, char *argv[])
     if (!filesystem::exists("temp/"))
       system("mkdir temp");
 
-    if (!filesystem::exists("temp/job_" + to_string(params.job_id)))
-      system(("mkdir temp/job_" + to_string(params.job_id)).c_str());
+    for (int i = 0; i < params.nb_threads; i++)
+      if (!filesystem::exists("temp/job_" + to_string(i)))
+        system(("mkdir temp/job_" + to_string(i)).c_str());
   }
 
   // Constructing Field
@@ -88,7 +87,7 @@ int main (int argc, char *argv[])
   {
     cout << "Loading existing results...\n";
     constructed_codes.load(params.field);
-    constructed_codes.load_queue(params.k, extended_code, params.field);
+    // constructed_codes.load_queue(params.k, extended_code, params.field);
   }
 
 
@@ -99,6 +98,7 @@ int main (int argc, char *argv[])
     {
       auto ps = ProjectiveSpace(n, params.field);
 
+      #pragma omp parallel for
       for (auto& p : ps.get_all_points())
       {
         auto w = hamming_weight(p.get_coordinates());
@@ -107,7 +107,7 @@ int main (int argc, char *argv[])
           // cout << "n is now " << n << endl;
           // cout << "Code added with weight " << w << endl;
           auto code = LCode({p.get_coordinates()});
-          extended_code.push(code);
+          // extended_code.push(code);
           constructed_codes.insert_code(code);
         } // end if
       } // end for
@@ -117,6 +117,7 @@ int main (int argc, char *argv[])
   } // end else
 
 
+  /*
   // Engine of classification
   while (!extended_code.empty()) 
   {
@@ -143,6 +144,42 @@ int main (int argc, char *argv[])
     cout << "==================================================================\n";
 
     extend_code(c, params, extended_code, constructed_codes);
+  }
+  */
+
+
+  // TODO: To change later
+  int ub_k = 7;
+  int k = 1;
+
+  while (k < ub_k)
+  {
+    system("clear");
+
+    cout << "==================================================================\n";
+    cout << "=== ****************** Intermediate results ****************** ===\n";
+    cout << "==================================================================\n";
+    cout << constructed_codes;
+    cout << "==================================================================\n";
+    cout << "=== ************************** END *************************** ===\n";
+    cout << "==================================================================\n";
+
+    auto jobs = constructed_codes.split_by_weight_enumerator(k, params.nb_threads);
+    vector<ConstructedCodesTable> local_tables;
+
+    #pragma omp parallel for
+    for (int t = 0; t < params.nb_threads; ++t)
+    {
+      ConstructedCodesTable local_table;
+
+      for (auto& code : jobs[t])
+        extend_code(code, params, t, local_table);
+
+      local_tables.push_back(local_table);
+    }
+
+    constructed_codes.merge_list(local_tables, k+1);
+    k++;
   }
 
   cout << constructed_codes;

@@ -54,6 +54,9 @@ auto check_lcode(
     LCode& code, ExtensionParams &ext_params) 
   -> bool
 {
+  if (code.get_nb_columns() > ext_params.params.upper_bound_n)
+    return false;
+
   if (code.get_minimum_column_multiplicity() != ext_params.r)
     return false;
 
@@ -71,7 +74,7 @@ auto parse_solution(ExtensionParams &ext_params) -> vector<vector<int>>
 {
   auto solution_filename = 
     "temp/job_" + 
-    to_string(ext_params.params.job_id) + 
+    to_string(ext_params.thread_id) + 
     "/solutions.txt";
 
   vector<vector<int>> solutions;
@@ -125,12 +128,12 @@ auto call_solvediophant(ExtensionParams &ext_params) -> void
 {
   auto solution_filename = 
     "temp/job_" + 
-    to_string(ext_params.params.job_id) + 
+    to_string(ext_params.thread_id) + 
     "/solutions.txt";
 
   auto problem_filename = 
     "temp/job_" + 
-    to_string(ext_params.params.job_id) + 
+    to_string(ext_params.thread_id) + 
     "/problem.txt";
 
   auto command = 
@@ -144,7 +147,6 @@ auto call_solvediophant(ExtensionParams &ext_params) -> void
 
 /* ************************************************************************* */
 auto build_equations(ExtensionParams &ext_params, 
-    queue<LCode>& extended_code, 
     ConstructedCodesTable& constructed_codes) -> Equations
 {
   auto field = ext_params.params.field;
@@ -238,7 +240,6 @@ auto build_equations(ExtensionParams &ext_params,
 
 /* ************************************************************************* */
 auto generate_equations_phase1(ExtensionParams &ext_params, 
-    queue<LCode>& extended_code, 
     ConstructedCodesTable& constructed_codes)
   -> void
 { 
@@ -247,7 +248,7 @@ auto generate_equations_phase1(ExtensionParams &ext_params,
   auto p_kp1 = projective_space_kp1.get_all_points();
   auto np_kp1 = p_kp1.size();
 
-  auto system = build_equations(ext_params, extended_code, constructed_codes);
+  auto system = build_equations(ext_params, constructed_codes);
 
   if (ext_params.params.check_feasibility && 
       !check_feasibility(system, ext_params.r))
@@ -258,7 +259,7 @@ auto generate_equations_phase1(ExtensionParams &ext_params,
 
   auto problem_filename = 
     "temp/job_" + 
-    to_string(ext_params.params.job_id) + 
+    to_string(ext_params.thread_id) + 
     "/problem.txt";
 
   problem_phase1.open(problem_filename);
@@ -296,7 +297,6 @@ auto generate_equations_phase1(ExtensionParams &ext_params,
 
     if (check_lcode(constructed_codes, code, ext_params))
     {
-      extended_code.push(code);
       constructed_codes.insert_code(code);
     }
   } // end for
@@ -306,7 +306,7 @@ auto generate_equations_phase1(ExtensionParams &ext_params,
 
 
 /* ************************************************************************* */
-auto extend_code(LCode& code, Params &params, queue<LCode>& extended_code, 
+auto extend_code(LCode& code, Params &params, int thread_id, 
     ConstructedCodesTable& constructed_codes) -> void
 {
   for (int r = 1; r <= code.get_minimum_column_multiplicity() + 1; r++)
@@ -315,8 +315,8 @@ auto extend_code(LCode& code, Params &params, queue<LCode>& extended_code,
       continue;
 
     int b = code.get_nb_columns() + r;
-    ExtensionParams ext_params = {params, params.a, b, r, code};
-    generate_equations_phase1(ext_params, extended_code, constructed_codes);
+    ExtensionParams ext_params = {params, params.a, b, r, thread_id, code};
+    generate_equations_phase1(ext_params, constructed_codes);
   }
 
   return;

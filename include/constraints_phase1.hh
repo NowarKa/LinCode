@@ -23,8 +23,7 @@ struct Params
   int maximum_weight = INT_MAX;
   int upper_bound_n = 6;
   int k = 0;
-  int job_id = 0;
-  int nb_jobs = 1;
+  int nb_threads = 1;
   bool check_feasibility = false;
   bool save_results = false;
   shared_ptr<const Field> field;
@@ -37,6 +36,7 @@ struct ExtensionParams
   int a; 
   int b; 
   int r; 
+  int thread_id;
   LCode &lcode; 
 };
 
@@ -44,5 +44,5 @@ struct ExtensionParams
 auto generate_equations_phase1(int delta, int a, int b, int r, 
     shared_ptr<const Field>& field, LCode g, vector<LCode>& extended_code) -> void;
 
-auto extend_code(LCode& code, Params &params, queue<LCode>& extended_code, 
+auto extend_code(LCode& code, Params &params, int thread_id, 
     ConstructedCodesTable& constructed_codes) -> void;

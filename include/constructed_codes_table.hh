@@ -11,6 +11,7 @@
 #include <unordered_set>
 #include <iostream>
 #include <filesystem>
+#include <vector>
 
 using namespace std;
 
@@ -102,6 +103,28 @@ public:
    */
   auto load_queue(int k, queue<LCode> &extended_code, 
       shared_ptr<const Field> field) -> void;
+
+
+  /**
+   * Inserts all [n, k] (for all n) LCodes of a list of ConstructedCodesTables.
+   *
+   * @param results A given list of ConstructedCodesTables.
+   * @param k A specified integer.
+   */
+  auto merge_list(const vector<ConstructedCodesTable> &results, int k) 
+    -> void;
+
+
+  /**
+   * Splits all [n, k] LCodes into `nb_threads`
+   * groups according to their weight enumerators. Codes having the
+   * same weight enumerator are assigned to the same group.
+   *
+   * @param k A specified integer.
+   * @param nb_thread The number of groups (typically one per thread).
+   */
+  auto split_by_weight_enumerator(int k, int nb_thread) 
+    -> vector<vector<LCode>>;
 
 
   /**
