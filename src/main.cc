@@ -11,7 +11,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <queue>
 #include <iostream>
 #include <CLI/CLI.hpp>
 
@@ -49,7 +48,8 @@ int main (int argc, char *argv[])
   app.add_option("--ubn", params.upper_bound_n, "Classify linear codes of "
       "dimension [n, k] for all lengths n <= ubn (default: 6).");
 
-  app.add_option("--nb-threads", params.nb_threads);
+  app.add_option("--nb-threads", params.nb_threads, "The number of threads "
+      "used for parallelization.");
 
   CLI11_PARSE(app, argc, argv);
 
@@ -98,7 +98,7 @@ int main (int argc, char *argv[])
     {
       auto ps = ProjectiveSpace(n, params.field);
 
-      #pragma omp parallel for
+      // #pragma omp parallel for
       for (auto& p : ps.get_all_points())
       {
         auto w = hamming_weight(p.get_coordinates());
@@ -115,6 +115,31 @@ int main (int argc, char *argv[])
 
     cout << "Done\n";
   } // end else
+
+  /*
+  else 
+  {
+    cout << "Adding one-dimensional linear codes...\n";
+    for (size_t n = 2; n < params.upper_bound_n; n++)
+    {
+      auto coordinates = vector<FieldElement>(n, params.field->get_element(1));
+
+      auto w = hamming_weight(coordinates);
+        if (w >= params.minimum_weight && w % params.delta == 0)
+        {
+          // cout << "n is now " << n << endl;
+          // cout << "Code added with weight " << w << endl;
+          auto code = LCode({coordinates});
+          // extended_code.push(code);
+          constructed_codes.insert_code(code);
+        } // end if
+      } // end for
+
+    cout << "Done\n";
+  } // end else
+  */
+
+  constructed_codes.save(params.field);
 
 
   /*
@@ -150,7 +175,7 @@ int main (int argc, char *argv[])
 
   // TODO: To change later
   int ub_k = 7;
-  int k = 1;
+  int k = params.k;
 
   while (k < ub_k)
   {
@@ -165,17 +190,16 @@ int main (int argc, char *argv[])
     cout << "==================================================================\n";
 
     auto jobs = constructed_codes.split_by_weight_enumerator(k, params.nb_threads);
-    vector<ConstructedCodesTable> local_tables;
+    vector<ConstructedCodesTable> local_tables(params.nb_threads);
 
     #pragma omp parallel for
     for (int t = 0; t < params.nb_threads; ++t)
     {
-      ConstructedCodesTable local_table;
-
       for (auto& code : jobs[t])
-        extend_code(code, params, t, local_table);
-
-      local_tables.push_back(local_table);
+        extend_code(code,
+            params,
+            t,
+            local_tables[t]);
     }
 
     constructed_codes.merge_list(local_tables, k+1);

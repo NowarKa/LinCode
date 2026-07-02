@@ -3,7 +3,6 @@
 #include "constructed_codes_table.hh"
 #include "linear_code.hh"
 
-#include <queue>
 #include <vector>
 
 struct Equations 
@@ -37,7 +36,7 @@ struct ExtensionParams
   int b; 
   int r; 
   int thread_id;
-  LCode &lcode; 
+  LCode lcode; 
 };
 
 

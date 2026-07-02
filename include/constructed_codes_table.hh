@@ -73,8 +73,7 @@ public:
 
     @param code A specified linear code.
    */
-  auto contains_code_and_update(LCode &basic_code, LCode &extended_code) 
-    -> bool;
+  // auto contains_code(LCode &basic_code, LCode &extended_code) -> bool;
 
 
   /**

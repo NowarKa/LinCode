@@ -3,6 +3,7 @@
 #include "linear_code.hh"
 
 #include <algorithm>
+#include <cassert>
 #include <fstream>
 #include <iomanip>
 #include <memory>
@@ -36,29 +37,6 @@ auto ConstructedCodesTable::contains_code(LCode& code) -> bool
   for (auto& s : table_.at({n, k})) 
     if (s.canonical_form() == cn_code)
       return true;
-
-  return false;
-}
-
-
-/* ************************************************************************* */
-auto ConstructedCodesTable::contains_code_and_update(LCode &basic_code, 
-    LCode &extended_code) -> bool
-{
-  size_t n = extended_code.get_nb_columns();
-  size_t k = extended_code.get_nb_rows();
-
-  if (table_.find({n, k}) == table_.end())
-    return false;
-
-  auto cn_code = extended_code.canonical_form();
-
-  for (auto& s : table_.at({n, k})) 
-    if (s.canonical_form() == cn_code)
-    {
-      s.updates_minimum_weight_enumerator_extension(basic_code);
-      return true;
-    }
 
   return false;
 }
@@ -146,8 +124,8 @@ auto ConstructedCodesTable::save(shared_ptr<const Field> field,
 
     for (const auto& code : codes)
     {
-      out << code;
-      out << "\n---\n";
+      out << code.canonical_form();
+      out << "---\n";
     }
   } // end for
 }
@@ -347,10 +325,5 @@ auto ConstructedCodesTable::load(
     if (!current.empty())
       table_[{n, k}].insert(LCode::from_canonical_form(current, field));
 
-    /*
-    auto field = Field(field_info.characteristic, 
-        field_info.reduction_polynomial.size(),
-        field_info.reduction_polynomial);
-    */
   }
 }

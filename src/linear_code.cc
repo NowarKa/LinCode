@@ -59,9 +59,36 @@ auto LCode::construct_from_columns(const vector<vector<FieldElement>>& columns)
 
 
 /* ************************************************************************* */
+auto LCode::remove_projective_point(const ProjectivePoint &p) const -> LCode
+{
+  /*
+   vector<vector<FieldElement>> new_columns;
+   new_columns.reserve(columns_.size());
+
+   for (const auto& column : columns_)
+   {
+   ProjectivePoint q(column);
+
+   if (q != p)
+   new_columns.push_back(column);
+   }
+
+  return LCode::construct_from_columns(new_columns);
+  */
+  vector<vector<FieldElement>> new_columns;
+
+  for (const auto& column : columns_)
+    if (ProjectivePoint(column) != p)
+      new_columns.push_back(column);
+
+  return LCode::construct_from_columns(new_columns);
+}
+
+
+/* ************************************************************************* */
 auto LCode::get_minimum_column_multiplicity() -> int
 {
-  if (minimum_column_multiplicity_ != 0)
+  if (minimum_column_multiplicity_ != -1)
     return minimum_column_multiplicity_;
 
   uint32_t min_mult = get_nb_columns();
@@ -123,63 +150,6 @@ auto LCode::get_weight_enumerator() const -> vector<int>
   }
 
   return weight_enumerator_;
-}
-
-
-/* ************************************************************************* */
-auto is_weight_enumerator_smaller(vector<int> &smaller, vector<int> &greater) 
-  -> bool
-{
-  auto minimum_length = min(smaller.size(), greater.size());
-  auto is_equal = true;
-
-  for (size_t i = 0; i < minimum_length; i++)
-  {
-    if (smaller[i] > greater[i])
-      return false;
-
-    if (smaller[i] != greater[i])
-      is_equal = false;
-  }
-
-  if (is_equal)
-    return smaller.size() <= minimum_length;
-
-  return true;
-}
-
-auto LCode::updates_minimum_weight_enumerator_extension(LCode &code) const 
-  -> void
-{
-  int r = code.get_nb_columns() - get_nb_columns();
-
-  auto find_r = minimum_weight_enumerator_extension_.find(r);
-  auto we = code.get_weight_enumerator();
-
-  if (find_r == minimum_weight_enumerator_extension_.end())
-    minimum_weight_enumerator_extension_[r] = we;
-
-  else if (is_weight_enumerator_smaller(we, find_r->second))
-    minimum_weight_enumerator_extension_[r] = we;
-
-  return;
-}
-
-
-/* ************************************************************************* */
-auto LCode::should_extend(int r) const -> bool
-{
-  auto find_r = minimum_weight_enumerator_extension_.find(r);
-
-  if (find_r == minimum_weight_enumerator_extension_.end())
-    return true;
-
-  auto we = get_weight_enumerator();
-
-  if (!is_weight_enumerator_smaller(find_r->second, we))
-    return true;
-
-  return false;
 }
 
 

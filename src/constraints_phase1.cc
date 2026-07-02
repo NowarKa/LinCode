@@ -7,6 +7,7 @@
 #include "linear_code.hh"
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
@@ -26,6 +27,40 @@ auto get_position_unit_vector(size_t i, uint32_t q) -> size_t
 {
   // The first is (0, ..., 1)
   return (pow(q, i) - 1)/(q - 1);
+}
+
+
+/* ************************************************************************* */
+auto passes_corollary_8(const LCode& parent, LCode& child) -> bool
+{
+  int r = child.get_minimum_column_multiplicity();
+
+  auto parent_we = parent.get_weight_enumerator();
+  auto min_we = parent_we;
+
+  bool first = true;
+  auto multiset = child.to_multiset();
+
+  for (const auto& [point, multiplicity] : multiset)
+  {
+    if (multiplicity != r)
+      continue;
+
+    auto candidate_parent = child.remove_projective_point(point);
+    auto we = candidate_parent.get_weight_enumerator();
+
+    /*
+    if (first || we < min_we)
+    {
+      min_we = std::move(we);
+      first = false;
+    }
+    */
+    if (we < min_we)
+      return false;
+  }
+
+  return parent_we == min_we;
 }
 
 
@@ -60,7 +95,7 @@ auto check_lcode(
   if (code.get_minimum_column_multiplicity() != ext_params.r)
     return false;
 
-  if (constructed_codes.contains_code_and_update(ext_params.lcode, code))
+  if (constructed_codes.contains_code(code))
     return false;
 
   return code.minimum_distance() >= ext_params.params.minimum_weight && 
@@ -119,7 +154,9 @@ auto construct_lcode_from_solution(const vector<int>& solution,
       matrix.push_back(p_kp1[i].get_coordinates());
   }
 
-  return LCode::construct_from_columns(matrix);
+  auto code = LCode::construct_from_columns(matrix);
+
+  return code;
 }
 
 
@@ -146,8 +183,7 @@ auto call_solvediophant(ExtensionParams &ext_params) -> void
 
 
 /* ************************************************************************* */
-auto build_equations(ExtensionParams &ext_params, 
-    ConstructedCodesTable& constructed_codes) -> Equations
+auto build_equations(ExtensionParams &ext_params) -> Equations
 {
   auto field = ext_params.params.field;
 
@@ -248,7 +284,7 @@ auto generate_equations_phase1(ExtensionParams &ext_params,
   auto p_kp1 = projective_space_kp1.get_all_points();
   auto np_kp1 = p_kp1.size();
 
-  auto system = build_equations(ext_params, constructed_codes);
+  auto system = build_equations(ext_params);
 
   if (ext_params.params.check_feasibility && 
       !check_feasibility(system, ext_params.r))
@@ -295,7 +331,19 @@ auto generate_equations_phase1(ExtensionParams &ext_params,
 
     auto code = construct_lcode_from_solution(solution, p_kp1);
 
-    if (check_lcode(constructed_codes, code, ext_params))
+    if (ext_params.lcode.get_nb_rows() == 1 && 
+        code.get_nb_columns() < ext_params.lcode.get_nb_columns())
+      continue;
+
+    size_t expected_length = 0;
+
+    for (size_t i = 0; i < np_kp1; ++i)
+      expected_length += solution[i];
+
+    assert(code.get_nb_columns() >= ext_params.lcode.get_nb_columns());
+
+    if (passes_corollary_8(ext_params.lcode, code) && 
+        check_lcode(constructed_codes, code, ext_params))
     {
       constructed_codes.insert_code(code);
     }
@@ -309,11 +357,8 @@ auto generate_equations_phase1(ExtensionParams &ext_params,
 auto extend_code(LCode& code, Params &params, int thread_id, 
     ConstructedCodesTable& constructed_codes) -> void
 {
-  for (int r = 1; r <= code.get_minimum_column_multiplicity() + 1; r++)
+  for (int r = 0; r <= code.get_minimum_column_multiplicity() + 1; r++)
   {
-    if (!code.should_extend(r))
-      continue;
-
     int b = code.get_nb_columns() + r;
     ExtensionParams ext_params = {params, params.a, b, r, thread_id, code};
     generate_equations_phase1(ext_params, constructed_codes);

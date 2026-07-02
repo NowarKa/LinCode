@@ -117,18 +117,6 @@ public:
 
 
   /**
-   * Updates minimum_weight_enumerator_extension_.
-   *
-   * @param code LCode.
-   */
-  auto updates_minimum_weight_enumerator_extension(LCode& code)  const -> void;
-
-
-  // TODO: Add disription
-  auto should_extend(int r) const -> bool;
-
-
-  /**
     Returns u.G where G is LCode's generator matrix and u a given vector.
 
     @param u The specified vector.
@@ -144,6 +132,15 @@ public:
     @param p The specified ProjectivePoint.
    */
   auto nb_columns_belong_to(const ProjectivePoint& p) const -> uint32_t;
+
+
+  /**
+   * Constructs an LCode resulting by deleting all columns equal 
+   * to a given ProjectivePoint.
+   *
+   * @param p A given ProjectivePoint.
+   */
+  auto remove_projective_point(const ProjectivePoint &p) const -> LCode;
 
 
   /**
@@ -193,9 +190,8 @@ private:
   vector<vector<FieldElement>> columns_;
   vector<vector<FieldElement>> rows_;
   mutable string canonical_form_ = "";
-  int minimum_column_multiplicity_ = 0;
+  int minimum_column_multiplicity_ = -1;
   mutable vector<int> weight_enumerator_;
-  mutable unordered_map<int, vector<int>> minimum_weight_enumerator_extension_;
 };
 
 
