@@ -90,6 +90,7 @@ public:
     Loads ConstructedCodesTable's content from files.
    */
   auto load(shared_ptr<const Field> field,
+      int upper_bound_k = INT_MAX,
       int upper_bound_n = INT_MAX, 
       const filesystem::path& directory = "data") -> void;
 

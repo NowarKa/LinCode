@@ -16,7 +16,7 @@ struct Equations
 struct Params 
 {
   int delta = 1;
-  int a = 1;
+  int a = 0;
   string field_file = "";
   int minimum_weight = 1;
   int maximum_weight = INT_MAX;

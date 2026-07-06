@@ -11,7 +11,6 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
-#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -49,13 +48,6 @@ auto passes_corollary_8(const LCode& parent, LCode& child) -> bool
     auto candidate_parent = child.remove_projective_point(point);
     auto we = candidate_parent.get_weight_enumerator();
 
-    /*
-    if (first || we < min_we)
-    {
-      min_we = std::move(we);
-      first = false;
-    }
-    */
     if (we < min_we)
       return false;
   }
@@ -359,7 +351,7 @@ auto extend_code(LCode& code, Params &params, int thread_id,
 {
   for (int r = 0; r <= code.get_minimum_column_multiplicity() + 1; r++)
   {
-    int b = code.get_nb_columns() + r;
+    int b = code.get_nb_columns() + r + 1;
     ExtensionParams ext_params = {params, params.a, b, r, thread_id, code};
     generate_equations_phase1(ext_params, constructed_codes);
   }

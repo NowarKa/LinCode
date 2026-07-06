@@ -6,7 +6,6 @@
 #include "projective_space.hh"
 
 #include <cstdlib>
-#include <execution>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -63,7 +62,6 @@ int main (int argc, char *argv[])
 
   ConstructedCodesTable constructed_codes;
 
-
   // Adding the directory in which solvediophant will work and 
   // the solutions will be added
   {
@@ -86,7 +84,7 @@ int main (int argc, char *argv[])
   if (params.k != 0)
   {
     cout << "Loading existing results...\n";
-    constructed_codes.load(params.field);
+    constructed_codes.load(params.field, 2);
     // constructed_codes.load_queue(params.k, extended_code, params.field);
   }
 
@@ -112,35 +110,9 @@ int main (int argc, char *argv[])
         } // end if
       } // end for
     } // end for
-
+    constructed_codes.save(params.field);
     cout << "Done\n";
   } // end else
-
-  /*
-  else 
-  {
-    cout << "Adding one-dimensional linear codes...\n";
-    for (size_t n = 2; n < params.upper_bound_n; n++)
-    {
-      auto coordinates = vector<FieldElement>(n, params.field->get_element(1));
-
-      auto w = hamming_weight(coordinates);
-        if (w >= params.minimum_weight && w % params.delta == 0)
-        {
-          // cout << "n is now " << n << endl;
-          // cout << "Code added with weight " << w << endl;
-          auto code = LCode({coordinates});
-          // extended_code.push(code);
-          constructed_codes.insert_code(code);
-        } // end if
-      } // end for
-
-    cout << "Done\n";
-  } // end else
-  */
-
-  constructed_codes.save(params.field);
-
 
   /*
   // Engine of classification

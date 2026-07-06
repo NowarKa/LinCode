@@ -271,6 +271,7 @@ auto parse_field_header(ifstream& in) -> ParsedFieldInfo
 
 auto ConstructedCodesTable::load(
     shared_ptr<const Field> field,
+    int upper_bound_k, 
     int upper_bound_n,
     const filesystem::path& directory) -> void
 {
@@ -291,7 +292,7 @@ auto ConstructedCodesTable::load(
     size_t n = stoull(stem.substr(0, pos));
     size_t k = stoull(stem.substr(pos + 1));
 
-    if (n > upper_bound_n)
+    if (n > upper_bound_n || k > upper_bound_k)
       continue;
 
     ifstream in(entry.path());
