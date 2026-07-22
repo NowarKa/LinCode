@@ -1,7 +1,7 @@
+#include <cassert>
 #include <iostream>
 #include <memory>
 #include <vector>
-#include <cassert>
 
 #include "field.hh"
 #include "field_element.hh"
@@ -9,8 +9,7 @@
 
 using namespace std;
 
-static void test_basic_field_properties(const shared_ptr<Field> GF)
-{
+static void test_basic_field_properties(const shared_ptr<Field> GF) {
   cout << "Testing basic field properties...\n";
 
   auto zero = FieldElement(GF);
@@ -25,10 +24,7 @@ static void test_basic_field_properties(const shared_ptr<Field> GF)
   cout << "Basic field properties test passed\n";
 }
 
-
-
-static void test_additive_group(const shared_ptr<Field> GF)
-{
+static void test_additive_group(const shared_ptr<Field> GF) {
   cout << "Testing additive group...\n";
 
   auto elems = vector<FieldElement>();
@@ -36,10 +32,9 @@ static void test_additive_group(const shared_ptr<Field> GF)
   for (uint64_t i = 0; i < GF->get_order(); ++i)
     elems.push_back(GF->get_element(i));
 
-  for (auto& a : elems)
-    for (auto& b : elems)
-      for (auto& c : elems)
-      {
+  for (auto &a : elems)
+    for (auto &b : elems)
+      for (auto &c : elems) {
         assert((a + b) + c == a + (b + c));
         assert(a + b == b + a);
 
@@ -53,10 +48,7 @@ static void test_additive_group(const shared_ptr<Field> GF)
   cout << "Additive group test passed\n";
 }
 
-
-
-static void test_multiplicative_group(const shared_ptr<Field> GF)
-{
+static void test_multiplicative_group(const shared_ptr<Field> GF) {
   cout << "Testing multiplicative group...\n";
 
   auto elems = vector<FieldElement>();
@@ -67,10 +59,9 @@ static void test_multiplicative_group(const shared_ptr<Field> GF)
   auto one = FieldElement(GF);
   one.set_one();
 
-  for (auto& a : elems)
-    for (auto& b : elems)
-      for (auto& c : elems)
-      {
+  for (auto &a : elems)
+    for (auto &b : elems)
+      for (auto &c : elems) {
         assert((a * b) * c == a * (b * c));
         assert(a * b == b * a);
         assert(a * one == a);
@@ -79,10 +70,7 @@ static void test_multiplicative_group(const shared_ptr<Field> GF)
   cout << "Multiplicative group test passed\n";
 }
 
-
-
-static void test_distributivity(const shared_ptr<Field> GF)
-{
+static void test_distributivity(const shared_ptr<Field> GF) {
   cout << "Testing distributivity...\n";
 
   auto elems = vector<FieldElement>();
@@ -90,25 +78,21 @@ static void test_distributivity(const shared_ptr<Field> GF)
   for (uint64_t i = 0; i < GF->get_order(); ++i)
     elems.push_back(GF->get_element(i));
 
-  for (auto& a : elems)
-    for (auto& b : elems)
-      for (auto& c : elems)
+  for (auto &a : elems)
+    for (auto &b : elems)
+      for (auto &c : elems)
         assert(a * (b + c) == a * b + a * c);
 
   cout << "Distributivity test passed\n";
 }
 
-
-
-static void test_inverses(const shared_ptr<Field> GF)
-{
+static void test_inverses(const shared_ptr<Field> GF) {
   cout << "Testing inverses...\n";
 
   auto one = FieldElement(GF);
   one.set_one();
 
-  for (uint64_t i = 1; i < GF->get_order(); ++i)
-  {
+  for (uint64_t i = 1; i < GF->get_order(); ++i) {
     auto a = GF->get_element(i);
 
     auto inv = mult_inverse(a);
@@ -119,17 +103,13 @@ static void test_inverses(const shared_ptr<Field> GF)
   cout << "Inverses test passed\n";
 }
 
-
-
-static void test_exponentiation(const shared_ptr<Field> GF)
-{
+static void test_exponentiation(const shared_ptr<Field> GF) {
   cout << "Testing exponentiation...\n";
 
   auto one = FieldElement(GF);
   one.set_one();
 
-  for (uint64_t i = 0; i < GF->get_order(); ++i)
-  {
+  for (uint64_t i = 0; i < GF->get_order(); ++i) {
     auto a = GF->get_element(i);
 
     assert(field_exp(a, 0) == one);
@@ -140,16 +120,13 @@ static void test_exponentiation(const shared_ptr<Field> GF)
   cout << "Exponentiation test passed\n";
 }
 
-
-
-static void test_polynomials()
-{
+static void test_polynomials() {
   cout << "Testing polynomial arithmetic...\n";
 
   Fint mod = 2;
 
-  vector<Fint> A = {1, 1};       // x + 1
-  vector<Fint> B = {1, 1, 1};    // x^2 + x + 1
+  vector<Fint> A = {1, 1};    // x + 1
+  vector<Fint> B = {1, 1, 1}; // x^2 + x + 1
 
   auto P = polynomial_multiply(A, B, mod);
 
@@ -161,10 +138,7 @@ static void test_polynomials()
   cout << "Polynomial arithmetic test passed\n";
 }
 
-
-
-static void test_extended_euclid_polynomials()
-{
+static void test_extended_euclid_polynomials() {
   cout << "Testing extended Euclid (polynomials)...\n";
 
   Fint mod = 2;
@@ -174,21 +148,15 @@ static void test_extended_euclid_polynomials()
 
   auto [X, Y, G] = polynomial_extended_euclid(A, B, mod);
 
-  auto left = polynomial_add(
-      polynomial_multiply(X, A, mod),
-      polynomial_multiply(Y, B, mod),
-      mod
-      );
+  auto left = polynomial_add(polynomial_multiply(X, A, mod),
+                             polynomial_multiply(Y, B, mod), mod);
 
   assert(left == G);
 
   cout << "Extended Euclid test passed\n";
 }
 
-
-
-int main()
-{
+int main() {
   cout << "========== FIELD TESTS START ==========\n";
 
   auto GF = std::make_shared<Field>(2, 3, vector<Fint>{1, 0, 1, 1}); // GF(2^3)

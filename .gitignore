@@ -76,10 +76,11 @@ solutions
 test_field
 test_projectif_space
 LinCode
-sd2
+# sd2
 _deps/
 
 build_field.*
 finite_field/test_projective_space
 finite_field/test_field
 temp/
+RES_DIR0/

@@ -1,12 +1,11 @@
 #include "field.hh"
 #include "field_element.hh"
-#include "projective_space.hh"
 #include "hyperplane.hh"
+#include "projective_space.hh"
 
 #include <memory>
 
-static void test_projective_point_equality(const shared_ptr<Field> GF) 
-{
+static void test_projective_point_equality(const shared_ptr<Field> GF) {
   cout << "Testing basic equalities...\n";
   auto v1 = {GF->get_element(1), GF->get_element(0)};
   auto v2 = {GF->get_element(1), GF->get_element(0)};
@@ -19,9 +18,7 @@ static void test_projective_point_equality(const shared_ptr<Field> GF)
   cout << "Basic equalities test passed\n";
 }
 
-
-static void test_projective_belonging(const shared_ptr<Field> GF) 
-{
+static void test_projective_belonging(const shared_ptr<Field> GF) {
   cout << "Testing belonging properties...\n";
 
   FieldVector v1 = {GF->get_element(1), GF->get_element(1)};
@@ -34,9 +31,7 @@ static void test_projective_belonging(const shared_ptr<Field> GF)
   cout << "Belonging properties test passed\n";
 }
 
-
-static void test_hyperplane_contains(shared_ptr<const Field> GF) 
-{
+static void test_hyperplane_contains(shared_ptr<const Field> GF) {
   cout << "Testing belonging properties...\n";
 
   const ProjectiveSpace ps(2, GF);
@@ -52,9 +47,7 @@ static void test_hyperplane_contains(shared_ptr<const Field> GF)
   cout << "Belonging properties test passed\n";
 }
 
-
-static void test_hyperplane_not_contains(shared_ptr<const Field> GF) 
-{
+static void test_hyperplane_not_contains(shared_ptr<const Field> GF) {
   cout << "Testing hyperplane properties...\n";
 
   ProjectiveSpace ps(2, GF);
@@ -70,9 +63,7 @@ static void test_hyperplane_not_contains(shared_ptr<const Field> GF)
   cout << "Hyperplane properties test passed\n";
 }
 
-
-static void test_pg14_size(shared_ptr<const Field> GF) 
-{
+static void test_pg14_size(shared_ptr<const Field> GF) {
   cout << "Testing PG(1,4)'s size...\n";
 
   ProjectiveSpace ps(2, GF);
@@ -83,19 +74,15 @@ static void test_pg14_size(shared_ptr<const Field> GF)
   cout << "PG(1,4)'s size test passed\n";
 }
 
-
-static void test_no_zero_vector(shared_ptr<const Field> GF) 
-{
+static void test_no_zero_vector(shared_ptr<const Field> GF) {
   ProjectiveSpace ps(3, GF);
   auto pts = ps.get_all_points();
 
-  for (auto& p : pts) 
-  {
+  for (auto &p : pts) {
     bool all_zero = true;
 
-    for (auto& x : p.get_coordinates()) 
-      if (!(x == GF->get_element(0))) 
-      {
+    for (auto &x : p.get_coordinates())
+      if (!(x == GF->get_element(0))) {
         all_zero = false;
         break;
       }
@@ -104,9 +91,7 @@ static void test_no_zero_vector(shared_ptr<const Field> GF)
   }
 }
 
-
-static void test_concatenate(const shared_ptr<Field> GF) 
-{
+static void test_concatenate(const shared_ptr<Field> GF) {
   FieldVector v = {GF->get_element(1), GF->get_element(1)};
   ProjectivePoint p(v);
 
@@ -119,7 +104,7 @@ static void test_concatenate(const shared_ptr<Field> GF)
 int main() {
   cout << "================= PROJECTIVE SPACE TESTS START =================\n";
 
-  Field GF = Field(2, 2, {1,1,1});
+  Field GF = Field(2, 2, {1, 1, 1});
   auto GF_ptr = make_shared<Field>(GF);
 
   test_projective_point_equality(GF_ptr);

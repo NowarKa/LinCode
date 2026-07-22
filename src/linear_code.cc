@@ -4,21 +4,19 @@
 #include "hyperplane.hh"
 #include "projective_space.hh"
 
-#include <cstdint>
-#include <iostream>
-#include <string>
-#include <iomanip>
 #include <algorithm>
-#include <vector>
-#include <fstream>
-#include <sstream>
-#include <filesystem>
+#include <cstddef>
+#include <cstdint>
 #include <cstdlib>
-
+#include <iomanip>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
 
 /* ************************************************************************* */
-auto transpose(const vector<vector<FieldElement>>& matrix) 
-  -> vector<vector<FieldElement>>
+auto transpose(const vector<vector<FieldElement>> &matrix)
+    -> vector<vector<FieldElement>>
 {
   if (matrix.empty())
     return {};
@@ -41,49 +39,78 @@ auto transpose(const vector<vector<FieldElement>>& matrix)
   return t_matrix;
 }
 
+/* ************************************************************************* */
+LCode::LCode(const vector<vector<FieldElement>> &rows)
+    : rows_(rows), columns_(transpose(rows)), weight_enumerator_({})
+{
+}
 
 /* ************************************************************************* */
-LCode::LCode(const vector<vector<FieldElement>>& rows) : 
-  rows_(rows), 
-  columns_(transpose(rows)), 
-  weight_enumerator_({})
-{}
+LCode::LCode(const unordered_map<ProjectivePoint, uint32_t> &multiset)
+    : multiset_(multiset)
+{
+  for (const auto &[p, m] : multiset)
+    for (size_t i = 0; i < m; i++)
+      columns_.push_back(p.get_coordinates());
 
+  rows_ = transpose(columns_);
+}
 
 /* ************************************************************************* */
-auto LCode::construct_from_columns(const vector<vector<FieldElement>>& columns)
-  -> LCode
+LCode::LCode(
+    shared_ptr<const unordered_map<Hyperplane, vector<int>>> &containing_map,
+    const vector<int> &solution, shared_ptr<const ProjectiveSpace> ps)
+{
+  auto points = ps->get_all_points();
+  auto np_kp1 = points.size();
+  unordered_map<ProjectivePoint, uint32_t> multiset;
+
+  for (size_t i = 0; i < np_kp1; i++)
+    if (solution[i] > 0)
+    {
+      multiset.insert({points[i].get_coordinates(), solution[i]});
+      for (int j = 0; j < solution[i]; j++)
+        columns_.push_back(points[i].get_coordinates());
+    }
+
+  auto n = columns_.size();
+
+  rows_ = transpose(columns_);
+  multiset_ = multiset;
+  weight_enumerator_ = vector<int>(n + 1, 0);
+
+  for (const auto &[h, v] : *containing_map)
+  {
+    int sum = 0;
+
+    for (auto i : v)
+      sum += solution[i];
+
+    weight_enumerator_[n - sum]++;
+
+    if (n - sum > minimum_distance_)
+      minimum_distance_ = n - sum;
+  }
+}
+
+/* ************************************************************************* */
+auto LCode::construct_from_columns(const vector<vector<FieldElement>> &columns)
+    -> LCode
 {
   return LCode(transpose(columns));
 }
 
-
 /* ************************************************************************* */
 auto LCode::remove_projective_point(const ProjectivePoint &p) const -> LCode
 {
-  /*
-   vector<vector<FieldElement>> new_columns;
-   new_columns.reserve(columns_.size());
-
-   for (const auto& column : columns_)
-   {
-   ProjectivePoint q(column);
-
-   if (q != p)
-   new_columns.push_back(column);
-   }
-
-  return LCode::construct_from_columns(new_columns);
-  */
   vector<vector<FieldElement>> new_columns;
 
-  for (const auto& column : columns_)
+  for (const auto &column : columns_)
     if (ProjectivePoint(column) != p)
       new_columns.push_back(column);
 
   return LCode::construct_from_columns(new_columns);
 }
-
 
 /* ************************************************************************* */
 auto LCode::get_minimum_column_multiplicity() -> int
@@ -93,79 +120,91 @@ auto LCode::get_minimum_column_multiplicity() -> int
 
   uint32_t min_mult = get_nb_columns();
 
-  for (auto& [p, m] : to_multiset())
+  for (auto &[p, m] : to_multiset())
     min_mult = min(min_mult, m);
 
   minimum_column_multiplicity_ = min_mult;
   return min_mult;
 }
 
-
 /* ************************************************************************* */
-auto LCode::nb_columns_belong_to(const ProjectivePoint& p) const -> uint32_t
+auto LCode::nb_columns_belong_to(const ProjectivePoint &p) const -> uint32_t
 {
   uint32_t nb = 0;
-  for (auto& v : columns_)
+  for (auto &v : columns_)
     if (p.contains(v))
       nb++;
   return nb;
 }
 
-
 /* ************************************************************************* */
 auto LCode::to_multiset() const -> unordered_map<ProjectivePoint, uint32_t>
 {
+  if (!multiset_.empty())
+    return multiset_;
+
   unordered_map<ProjectivePoint, uint32_t> multiset;
-  for (const auto& column : columns_)
+  for (const auto &column : columns_)
   {
     auto p = ProjectivePoint(column);
     if (multiset.find(p) == multiset.end())
-      multiset.insert({p,1});
+      multiset.insert({p, 1});
     else
       multiset.at(p)++;
   }
+
+  multiset_ = multiset;
+
   return multiset;
 }
 
-
 /* ************************************************************************* */
-auto LCode::get_weight_enumerator() const -> vector<int>
+auto LCode::get_weight_enumerator(shared_ptr<const ProjectiveSpace> ps) const
+    -> vector<int>
 {
   if (!weight_enumerator_.empty())
     return weight_enumerator_;
 
-  weight_enumerator_ = vector<int>(get_nb_columns()+1, 0);
+  weight_enumerator_ = vector<int>(get_nb_columns() + 1, 0);
 
-  auto ps = ProjectiveSpace(get_nb_rows(), rows_[0][0].get_field());
-  auto points = ps.get_all_points();
+  vector<ProjectivePoint> points;
 
-  for (const auto& p : points)
+  if (ps != nullptr)
+  {
+    points = ps->get_all_points();
+  }
+
+  else
+  {
+    auto psn = ProjectiveSpace(get_nb_rows(), rows_[0][0].get_field());
+    points = psn.get_all_points();
+  }
+
+  for (const auto &p : points)
   {
     auto encoded = encode_column_vector(p.get_coordinates());
     int h = hamming_weight(encoded);
-    
+
     if (h > 0)
       weight_enumerator_[h]++;
-
   }
 
   return weight_enumerator_;
 }
 
-
 /* ************************************************************************* */
-auto LCode::weight(const vector<Hyperplane>& hyperplanes) const -> uint32_t
+auto LCode::weight(const vector<Hyperplane> &hyperplanes) const -> uint32_t
 {
   int d = get_nb_rows();
   int n = get_nb_columns();
 
   auto M = to_multiset();
 
-  for (const auto& H : hyperplanes)
+  for (const auto &H : hyperplanes)
   {
     int MH = 0;
 
-    for (auto const& [P, mult] : M)
+    for (auto const &[P, mult] : M)
       if (H.contains(P))
         MH += mult;
 
@@ -175,12 +214,11 @@ auto LCode::weight(const vector<Hyperplane>& hyperplanes) const -> uint32_t
   return d;
 }
 
-
 /* ************************************************************************* */
-auto LCode::encode_column_vector(const vector<FieldElement>& u) const
-  -> vector<FieldElement>
+auto LCode::encode_column_vector(const vector<FieldElement> &u) const
+    -> vector<FieldElement>
 {
-  if (rows_.empty()) 
+  if (rows_.empty())
     return {};
 
   size_t n = u.size();
@@ -191,12 +229,6 @@ auto LCode::encode_column_vector(const vector<FieldElement>& u) const
   if (rows_.size() != n)
     throw invalid_argument("Incompatible dimension");
 
-  /*
-  for (const auto& row : G)
-    if (row.size() != m)
-      throw std::invalid_argument("The matrix is not rectangular");
-  */
-
   vector<FieldElement> result(m, zero);
 
   for (size_t j = 0; j < m; ++j)
@@ -206,11 +238,14 @@ auto LCode::encode_column_vector(const vector<FieldElement>& u) const
   return result;
 }
 
-
 /* ************************************************************************* */
-auto LCode::minimum_distance() -> uint32_t
+auto LCode::minimum_distance(shared_ptr<const ProjectiveSpace> ps) const
+    -> uint32_t
 {
-  auto we = get_weight_enumerator();
+  if (minimum_distance_ != -1)
+    return minimum_distance_;
+
+  auto we = get_weight_enumerator(ps);
 
   for (size_t i = 1; i < we.size(); i++)
     if (we[i] > 0)
@@ -219,71 +254,23 @@ auto LCode::minimum_distance() -> uint32_t
   return 0;
 }
 
-
 /* ************************************************************************* */
 auto LCode::is_codeword_weight_divisible(int delta) -> bool
 {
   if (delta <= 1)
     return true;
 
-  auto ps = ProjectiveSpace(get_nb_rows(), rows_[0][0].get_field());
-  auto points = ps.get_all_points();
+  auto we = get_weight_enumerator();
 
-  for (const auto& p : points)
-  {
-    auto encoded = encode_column_vector(p.get_coordinates());
-    int h = hamming_weight(encoded);
-    
-    if (h % delta != 0)
+  for (size_t i = 1; i < we.size(); i++)
+    if (we[i] > 0 && i % delta != 0)
       return false;
-  }
 
   return true;
 }
 
-
 /* ************************************************************************* */
-auto LCode::from_canonical_form(
-    const string& canonical_form,
-    shared_ptr<const Field> field)
-    -> LCode
-{
-  istringstream in(canonical_form);
-
-  size_t k;
-  size_t n;
-
-  if (!(in >> k >> n))
-    throw runtime_error("Invalid canonical form header.");
-
-  vector<vector<FieldElement>> rows;
-
-  for (size_t i = 0; i < k; i++)
-  {
-    vector<FieldElement> line;
-
-    for (size_t j = 0; j < n; j++)
-    {
-      int value;
-
-      if (!(in >> value))
-        throw runtime_error( "Invalid canonical form matrix.");
-
-      line.push_back(field->get_element(value));
-    }
-
-    rows.push_back(line);
-  }
-
-  LCode code(rows);
-  code.canonical_form_ = canonical_form;
-
-  return code;
-}
-
-
-/* ************************************************************************* */
-ostream& operator<<(ostream& output, const LCode& right)
+ostream &operator<<(ostream &output, const LCode &right)
 {
   int n = right.get_nb_rows();
   int m = right.get_nb_columns();
@@ -293,16 +280,17 @@ ostream& operator<<(ostream& output, const LCode& right)
 
   for (int j = 0; j < m; ++j)
     for (int i = 0; i < n; ++i)
-      width[j] = max(width[j], (int)to_string(right(i,j).index()).size());
+      width[j] = max(width[j], (int)to_string(right(i, j).index()).size());
 
-  auto print_line = [&](int i, const string& left, const string& r)
+  auto print_line = [&](int i, const string &left, const string &r)
   {
     output << left << " ";
 
     for (int j = 0; j < m; ++j)
     {
       output << setw(width[j]) << right(i, j).index();
-      if (j + 1 < m) cout << " ";
+      if (j + 1 < m)
+        cout << " ";
     }
 
     output << " " << r << "\n";
@@ -319,122 +307,18 @@ ostream& operator<<(ostream& output, const LCode& right)
   return output;
 }
 
-
 /* ************************************************************************* */
-bool operator==(const LCode& left, const LCode& right)
+bool operator==(const LCode &left, const LCode &right)
 {
-  return left.canonical_form() == right.canonical_form();
+  return left.rows_ == right.rows_;
 }
 
-
 /* ************************************************************************* */
-auto LCode::canonical_form(const string& sage_binary) const -> const string
+auto LCode::is_projective() const -> bool
 {
-  namespace fs = filesystem;
+  for (const auto &[p, m] : to_multiset())
+    if (m > 1)
+      return false;
 
-  if (columns_.empty())
-    return "";
-
-  if (canonical_form_ != "")
-    return canonical_form_;
-
-  auto q = columns_[0][0].get_field()->get_order();
-
-  auto tmpdir = fs::temp_directory_path();
-
-  auto input_file  = tmpdir / "codecan_input.txt";
-  auto output_file = tmpdir / "codecan_output.txt";
-  auto script_file = tmpdir / "codecan_script.sage";
-
-
-  // Exporting matrix.
-  {
-    ofstream out(input_file);
-
-    const size_t k = get_nb_rows();
-    const size_t n = get_nb_columns();
-
-    out << q << " " << k << " " << n << "\n";
-
-    for (size_t i = 0; i < k; ++i)
-    {
-      for (size_t j = 0; j < n; ++j)
-      {
-        if (j)
-          out << " ";
-        out << (*this)(i,j).index();
-      }
-
-      out << "\n";
-    }
-  }
-
-
-  // Writing Sage script.
-  {
-    ofstream out(script_file);
-
-    out << R"(
-from sage.all import *
-
-with open(r')"
-    << input_file.string()
-    << R"(', 'r') as f:
-
-    q,k,n = map(int, f.readline().split())
-
-    F = GF(q)
-
-    rows = []
-
-    for _ in range(k):
-        rows.append([F(int(x)) for x in f.readline().split()])
-
-G = Matrix(F, rows)
-
-C = LinearCode(G)
-
-Can, T = C.canonical_representative(
-    equivalence='linear'
-)
-
-M = Can.generator_matrix()
-
-with open(r')"
-    << output_file.string()
-    << R"(', 'w') as f:
-
-    f.write(str(M.nrows()) + " "
-            + str(M.ncols()) + "\n")
-
-    for row in M.rows():
-        f.write(
-            " ".join(
-                str(x)
-                for x in row
-            )
-        )
-        f.write("\n")
-)";
-  }
-
-
-  // Executing Sage.
-  string command =
-    sage_binary + " " + script_file.string();
-
-  int ret = system(command.c_str());
-
-  if (ret != 0)
-    throw std::runtime_error(
-        "Sage failed while computing canonical form."
-        );
-
-  // Parsing output.
-  ifstream in(output_file);
-  ostringstream result;
-  result << in.rdbuf();
-  canonical_form_ = result.str();
-
-  return result.str();
+  return true;
 }

@@ -4,29 +4,24 @@
 #include "modular_arith.hh"
 
 // Computes greatest common divisor of two positive integers
-auto extended_euclid(Fint a, Fint b) -> tuple<Fint, Fint, Fint>
-{
+auto extended_euclid(Fint a, Fint b) -> tuple<Fint, Fint, Fint> {
   assert(a > 0);
   assert(b > 0);
   Fint x, y, d;
   Fint q, r;
   Fint x1, x2, y1, y2;
 
-  if (b == 0)
-  {
+  if (b == 0) {
     d = a;
     x = 1;
     y = 0;
-  }
-  else
-  {
+  } else {
     x1 = 0;
     x2 = 1;
     y1 = 1;
     y2 = 0;
 
-    while (b > 0)
-    {
+    while (b > 0) {
       q = a / b;
       r = a % b;
       a = b;

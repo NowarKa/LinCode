@@ -2,32 +2,23 @@
 
 #include "field.hh"
 #include "linear_code.hh"
+#include "utils.hh"
 
 #include <climits>
 #include <cstddef>
+#include <filesystem>
+#include <iostream>
 #include <memory>
 #include <queue>
 #include <unordered_map>
 #include <unordered_set>
-#include <iostream>
-#include <filesystem>
 #include <vector>
 
 using namespace std;
 
-// Hash function for pair<size_t, size_t> in order to use unordered_map.
-template<> struct std::hash<pair<size_t, size_t>> {
-  size_t operator()(const pair<size_t, size_t>& p) const noexcept 
-  {
-    size_t h1 = hash<size_t>{}(p.first);
-    size_t h2 = hash<size_t>{}(p.second);
-    return h1 * 31 + h2;
-  }
-};
-
 /**
-  Defines the structure that stores classified linear codes. For each cople 
-  (n, k) it assocites the set of classified [n, k] linear codes in their 
+  Defines the structure that stores classified linear codes. For each cople
+  (n, k) it assocites the set of classified [n, k] linear codes in their
   CANONICAL FORM.
 
   It stores the following private data:
@@ -41,59 +32,55 @@ public:
    */
   ConstructedCodesTable() = default;
 
-
   /**
     Destructs a ConstructedCodesTable.
    */
   ~ConstructedCodesTable() = default;
-
 
   /**
     Inserts a given linear code.
 
     @param code A specified linear code.
    */
-  auto insert_code(LCode& code) -> void;
-  
+  auto insert_code(LCode &code) -> void;
 
   /**
-    Returns true if ConstructedCodesTable contains a given linear code, and 
+    Returns true if ConstructedCodesTable contains a given linear code, and
     false otherwise.
 
     @param code A specified linear code.
    */
-  auto contains_code(LCode& code) -> bool;
-
+  auto contains_code(LCode &code, shared_ptr<long long int> time_sage = nullptr)
+      -> bool;
 
   /**
-    Returns true if ConstructedCodesTable contains a given linear code, and 
-    false otherwise. Update the field `minimum_weight_enumerator_extension_` 
-    of ConstructedCodesTable's LCodes in order to keep the smallest weight 
+    Returns true if ConstructedCodesTable contains a given linear code, and
+    false otherwise. Update the field `minimum_weight_enumerator_extension_`
+    of ConstructedCodesTable's LCodes in order to keep the smallest weight
     enumerator (lexicographical order).
 
     @param code A specified linear code.
    */
   // auto contains_code(LCode &basic_code, LCode &extended_code) -> bool;
 
-
   /**
-    Saves ConstructedCodesTable's content to disk. By default, files are stored 
+    Saves ConstructedCodesTable's content to disk. By default, files are stored
     in `data/` folder.
 
     @param directory Directrory's name.
    */
-  auto save(shared_ptr<const Field> field, 
-      const filesystem::path& directory = "data") const -> void;
-
+  auto save(shared_ptr<const Field> field,
+            const filesystem::path &directory = "data") const -> void;
 
   /**
     Loads ConstructedCodesTable's content from files.
    */
+  /*
   auto load(shared_ptr<const Field> field,
       int upper_bound_k = INT_MAX,
-      int upper_bound_n = INT_MAX, 
+      int upper_bound_n = INT_MAX,
       const filesystem::path& directory = "data") -> void;
-
+  */
 
   /**
    * Loads all codes of dimension [n', k] to queue to start classifcation.
@@ -101,9 +88,8 @@ public:
    * @param k A given integer.
    * @param extended_code A given queue.
    */
-  auto load_queue(int k, queue<LCode> &extended_code, 
-      shared_ptr<const Field> field) -> void;
-
+  auto load_queue(int k, queue<LCode> &extended_code,
+                  shared_ptr<const Field> field) -> void;
 
   /**
    * Inserts all [n, k] (for all n) LCodes of a list of ConstructedCodesTables.
@@ -111,9 +97,7 @@ public:
    * @param results A given list of ConstructedCodesTables.
    * @param k A specified integer.
    */
-  auto merge_list(const vector<ConstructedCodesTable> &results, int k) 
-    -> void;
-
+  auto merge_list(const vector<ConstructedCodesTable> &results, int k) -> void;
 
   /**
    * Splits all [n, k] LCodes into `nb_threads`
@@ -123,9 +107,8 @@ public:
    * @param k A specified integer.
    * @param nb_thread The number of groups (typically one per thread).
    */
-  auto split_by_weight_enumerator(int k, int nb_thread) 
-    -> vector<vector<LCode>>;
-
+  auto split_by_weight_enumerator(int k, int nb_thread)
+      -> vector<vector<LCode>>;
 
   /**
     Outputs a ConstructedCodesTable to the standard output
@@ -133,8 +116,8 @@ public:
     @param output an output stream on the left of << sign
     @returns output stream
     */
-  friend ostream& operator<<(ostream& output, 
-      const ConstructedCodesTable& right);
+  friend ostream &operator<<(ostream &output,
+                             const ConstructedCodesTable &right);
 
 private:
   unordered_map<pair<size_t, size_t>, unordered_set<LCode>> table_;

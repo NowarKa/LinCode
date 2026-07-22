@@ -17,15 +17,14 @@ using FieldVector = vector<FieldElement>;
 
 /**
   Returns a normalized copy of the given FieldVector.
- 
+
   The normalized vector is obtained by multiplying the vector by the
   inverse of its first non-zero coefficient, making the first non-zero
   coefficient equal to 1.
- 
+
   @param v The vector to normalize.
  */
-auto normalize(const FieldVector& v) -> FieldVector;
-
+auto normalize(const FieldVector &v) -> FieldVector;
 
 /**
   Returns the weight of a given FieldVector.
@@ -36,7 +35,6 @@ auto normalize(const FieldVector& v) -> FieldVector;
  */
 auto hamming_weight(const FieldVector &v) -> int;
 
-
 /**
   Returns the hamming distance of two FieldVectors.
 
@@ -45,9 +43,7 @@ auto hamming_weight(const FieldVector &v) -> int;
   @param left The left vector.
   @param right The right vector.
  */
-auto hamming_distance(const FieldVector& left, const FieldVector& right) 
-  -> int;
-
+auto hamming_distance(const FieldVector &left, const FieldVector &right) -> int;
 
 /**
   Retruns the i-th unit vector of GF(q)^n.
@@ -56,17 +52,15 @@ auto hamming_distance(const FieldVector& left, const FieldVector& right)
   @param i The index of the unit vector.
   @param field The field.
  */
-auto get_unit_vector(const int& n, const int& i, 
-    shared_ptr<const Field>& field) -> FieldVector;
-
+auto get_unit_vector(const int &n, const int &i, shared_ptr<const Field> &field)
+    -> FieldVector;
 
 /**
-  Returns true if the given vector is equal to the zero vector and false 
+  Returns true if the given vector is equal to the zero vector and false
   otherwise.
 
   @param v The vector to be compared to zero.
  */
-auto is_zero(const FieldVector & v) -> bool;
+auto is_zero(const FieldVector &v) -> bool;
 
-
-auto is_canonical(const FieldVector& v) -> bool;
+auto is_canonical(const FieldVector &v) -> bool;

@@ -1,18 +1,16 @@
+#include "field.hh"
 #include "field_element.hh"
 #include "typedefs.hh"
-#include "field.hh"
 
 #include <filesystem>
 #include <fstream>
 
 /* ************************************************************************* */
-auto Field::get_element(uint64_t index) const -> FieldElement
-{
+auto Field::get_element(uint64_t index) const -> FieldElement {
   FieldElement result(shared_from_this());
   uint64_t p = get_characteristic();
 
-  for (int i = 0; i < get_dimension(); ++i)
-  {
+  for (int i = 0; i < get_dimension(); ++i) {
     result[i] = index % p;
     index /= p;
   }
@@ -20,10 +18,8 @@ auto Field::get_element(uint64_t index) const -> FieldElement
   return result;
 }
 
-
 /* ************************************************************************* */
-auto Field::get_all_elements() const -> std::vector<FieldElement>
-{
+auto Field::get_all_elements() const -> std::vector<FieldElement> {
   std::vector<FieldElement> elems;
 
   for (uint64_t i = 0; i < get_order(); ++i)
@@ -32,10 +28,8 @@ auto Field::get_all_elements() const -> std::vector<FieldElement>
   return elems;
 }
 
-
 /* ************************************************************************* */
-auto Field::parse_field_file(const filesystem::path& file) -> Field
-{
+auto Field::parse_field_file(const filesystem::path &file) -> Field {
   ifstream in(file);
 
   if (!in)
@@ -44,7 +38,7 @@ auto Field::parse_field_file(const filesystem::path& file) -> Field
   string line;
 
   if (!getline(in, line))
-    throw runtime_error( "Missing characteristic line.");
+    throw runtime_error("Missing characteristic line.");
 
   const string characteristic_prefix = "characteristic=";
 

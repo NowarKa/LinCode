@@ -7,6 +7,54 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+#################################
+######## Format and Tidy ########
+#################################
+
+find_program(CLANG_FORMAT_EXE NAMES clang-format)
+find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+
+file(GLOB_RECURSE PROJECT_SOURCES
+  src/*.cc
+  src/*.hh
+  include/*.hh
+)
+
+if(CLANG_FORMAT_EXE)
+  add_custom_target(format
+    COMMAND ${CLANG_FORMAT_EXE} -i ${PROJECT_SOURCES}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Running clang-format"
+  )
+
+  add_custom_target(format-check
+    COMMAND ${CLANG_FORMAT_EXE}
+      --dry-run
+      --Werror
+      ${PROJECT_SOURCES}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Checking clang-format"
+  )
+else()
+  message(WARNING "clang-format not found")
+endif()
+
+if(CLANG_TIDY_EXE)
+  add_custom_target(tidy
+    COMMAND ${CLANG_TIDY_EXE}
+      -p=${CMAKE_BINARY_DIR}
+      ${PROJECT_SOURCES}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Running clang-tidy"
+  )
+else()
+  message(WARNING "clang-tidy not found")
+endif()
+
+#################################
+############## END ##############
+#################################
+
 FetchContent_Declare(
   CLI11
   GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
@@ -46,7 +94,8 @@ add_subdirectory(finite_field)
 #################################
 
 add_library(LinCodeLibrary
-  src/constraints_phase1.cc
+  src/code_extension.cc
+  src/code_equivalence.cc
   src/constructed_codes_table.cc
   src/linear_code.cc
   src/phase0.cc

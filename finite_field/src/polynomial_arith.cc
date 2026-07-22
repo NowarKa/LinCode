@@ -8,11 +8,9 @@
 
 using namespace std;
 
-
 /* ************************************************************************* */
-auto polynomial_add(const vector<Fint>& A, const vector<Fint>& B, 
-    Fint modulus) -> vector<Fint>
-{
+auto polynomial_add(const vector<Fint> &A, const vector<Fint> &B, Fint modulus)
+    -> vector<Fint> {
   int min_degree = min(A.size(), B.size());
   int sum_degree = max(A.size(), B.size());
   vector<Fint> sum = vector<Fint>(sum_degree, 0);
@@ -27,12 +25,9 @@ auto polynomial_add(const vector<Fint>& A, const vector<Fint>& B,
   return sum;
 }
 
-
-
 /* ************************************************************************* */
-auto polynomial_subtract(const vector<Fint>& A, const vector<Fint>& B, 
-    Fint modulus) -> vector<Fint>
-{
+auto polynomial_subtract(const vector<Fint> &A, const vector<Fint> &B,
+                         Fint modulus) -> vector<Fint> {
   int min_degree = min(A.size(), B.size());
   int sub_degree = max(A.size(), B.size());
   vector<Fint> sub = vector<Fint>(sub_degree, 0);
@@ -43,28 +38,22 @@ auto polynomial_subtract(const vector<Fint>& A, const vector<Fint>& B,
     if (sub_degree == A.size())
       sub[i] = A[i];
     else
-      sub[i] = ( (B[i]>0) ? (modulus - B[i]) : 0);
+      sub[i] = ((B[i] > 0) ? (modulus - B[i]) : 0);
   return sub;
 }
 
-
-
 /* ************************************************************************* */
-auto polynomial_multiply(const vector<Fint> &A, const vector<Fint> &B, 
-    Fint modulus) -> vector<Fint>
-{
+auto polynomial_multiply(const vector<Fint> &A, const vector<Fint> &B,
+                         Fint modulus) -> vector<Fint> {
   int Adeg = polynomial_degree(A);
   int Bdeg = polynomial_degree(B);
   if (Adeg == -1 || Bdeg == -1)
     return vector<Fint>(A.size(), 0);
-  vector<Fint> P = vector<Fint>(Adeg+Bdeg+1,0);
-  for (int i = 0; i <= Adeg + Bdeg; i++)
-  {
-    for (int j = 0; j <= i; j++)
-    {
-      if ( (i - j <= Bdeg) && (j <= Adeg) )
-      {
-        Fint temp = multiply_modular(A[j], B[i-j], modulus);
+  vector<Fint> P = vector<Fint>(Adeg + Bdeg + 1, 0);
+  for (int i = 0; i <= Adeg + Bdeg; i++) {
+    for (int j = 0; j <= i; j++) {
+      if ((i - j <= Bdeg) && (j <= Adeg)) {
+        Fint temp = multiply_modular(A[j], B[i - j], modulus);
         P[i] = add_modular(P[i], temp, modulus);
       }
     }
@@ -72,43 +61,41 @@ auto polynomial_multiply(const vector<Fint> &A, const vector<Fint> &B,
   return P;
 }
 
-
-
 /* ************************************************************************* */
-auto polynomial_divide(const vector<Fint> &A, const vector<Fint> &B, 
-    Fint modulus) -> pair<vector<Fint>, vector<Fint>>
-{
+auto polynomial_divide(const vector<Fint> &A, const vector<Fint> &B,
+                       Fint modulus) -> pair<vector<Fint>, vector<Fint>> {
   int Adeg = polynomial_degree(A);
   int Bdeg = polynomial_degree(B);
 
-  if (Adeg < Bdeg) return { {0}, A };
+  if (Adeg < Bdeg)
+    return {{0}, A};
 
   auto Q = vector<Fint>(Adeg - Bdeg + 1, 0);
   auto R = vector<Fint>(Bdeg, 0);
 
-  if (Bdeg==-1)
+  if (Bdeg == -1)
     throw ErrorDivideByZero;
 
-  if (Adeg==-1)
+  if (Adeg == -1)
     return {Q, R};
 
   // allocate array to hold result of B multplied by q
-  auto qB = vector<Fint>(Adeg+1, 0);
+  auto qB = vector<Fint>(Adeg + 1, 0);
 
   // copy A to R
   int Rdeg = Adeg;
   R = A;
 
-  while ( Rdeg >= Bdeg )
-  {
-    Fint q = divide_modular(R[Rdeg], B[Bdeg], modulus); // divide leading coefficients
+  while (Rdeg >= Bdeg) {
+    Fint q = divide_modular(R[Rdeg], B[Bdeg],
+                            modulus); // divide leading coefficients
     int diff = Rdeg - Bdeg;
     // update Q
     Q[diff] = q;
 
     // do this: qB = q * B
     for (int i = Bdeg; i >= 0; i--)
-      qB[i+diff] = multiply_modular(B[i], q, modulus);
+      qB[i + diff] = multiply_modular(B[i], q, modulus);
 
     for (int i = 0; i < diff; i++)
       qB[i] = 0;
@@ -124,12 +111,10 @@ auto polynomial_divide(const vector<Fint> &A, const vector<Fint> &B,
   return {Q, R};
 }
 
-
-
 /* ************************************************************************* */
-auto  polynomial_extended_euclid(const vector<Fint>& A, const vector<Fint>& B, 
-    Fint modulus) -> tuple<vector<Fint>, vector<Fint>, vector<Fint>>
-{
+auto polynomial_extended_euclid(const vector<Fint> &A, const vector<Fint> &B,
+                                Fint modulus)
+    -> tuple<vector<Fint>, vector<Fint>, vector<Fint>> {
   vector<Fint> r0 = A;
   vector<Fint> r1 = B;
 
@@ -139,14 +124,13 @@ auto  polynomial_extended_euclid(const vector<Fint>& A, const vector<Fint>& B,
   vector<Fint> y0 = {0};
   vector<Fint> y1 = {1};
 
-  while (polynomial_degree(r1) != -1)
-  {
+  while (polynomial_degree(r1) != -1) {
     auto [q, r2] = polynomial_divide(r0, r1, modulus);
 
-    auto x2 = polynomial_subtract(x0, polynomial_multiply(q, x1, modulus), 
-        modulus);
-    auto y2 = polynomial_subtract(y0, polynomial_multiply(q, y1, modulus), 
-        modulus);
+    auto x2 =
+        polynomial_subtract(x0, polynomial_multiply(q, x1, modulus), modulus);
+    auto y2 =
+        polynomial_subtract(y0, polynomial_multiply(q, y1, modulus), modulus);
 
     r0 = r1;
     r1 = r2;
@@ -161,20 +145,15 @@ auto  polynomial_extended_euclid(const vector<Fint>& A, const vector<Fint>& B,
   return {x0, y0, r0};
 }
 
-
-
 /* ************************************************************************* */
-void polynomial_print(const vector<Fint>& A)
-{
+void polynomial_print(const vector<Fint> &A) {
   int Adeg = polynomial_degree(A);
-  if (Adeg==-1)
+  if (Adeg == -1)
     cout << "( 0 )";
-  else
-  {
+  else {
     cout << "( ";
-    for (int i = Adeg; i >= 0; i--)
-    {
-      if (i>0)
+    for (int i = Adeg; i >= 0; i--) {
+      if (i > 0)
         cout << A[i] << " x^" << i << " + ";
       else
         cout << A[i] << " )";
