@@ -76,7 +76,8 @@ solutions
 test_field
 test_projectif_space
 LinCode
-# sd2
+sd2
+LCequivalence
 _deps/
 
 build_field.*
