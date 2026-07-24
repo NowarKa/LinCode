@@ -10,6 +10,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -26,6 +27,19 @@ template <> struct std::hash<std::vector<int>>
 
     for (int i = 0; i < v.size(); i++)
       h += pow(2, i) * hash<int>{}(v[i]);
+
+    return h;
+  }
+};
+
+template <> struct std::hash<std::pair<std::vector<int>, int>>
+{
+  size_t operator()(const std::pair<std::vector<int>, int> &v) const noexcept
+  {
+    size_t h = v.second;
+
+    for (int i = 1; i <= v.first.size(); i++)
+      h += pow(2, i) * hash<int>{}(v.first[i-1]);
 
     return h;
   }
@@ -57,10 +71,13 @@ struct Params
   int minimum_weight = 1;
   int maximum_weight = INT_MAX;
   int upper_bound_n = 6;
-  int k = 0;
+  int k = 1;
   int nb_threads = 1;
   bool check_feasibility = false;
   bool save_results = false;
+  bool load = false;
+  int load_n = 0;
+  int load_k = 0;
   shared_ptr<const Field> field;
   shared_ptr<const ProjectiveSpace> ps_k;
   shared_ptr<const ProjectiveSpace> ps_kp1;
@@ -68,9 +85,10 @@ struct Params
   shared_ptr<long long int> time_equivalence = nullptr;
   shared_ptr<long long int> time_sd = nullptr;
   shared_ptr<long long int> time_scip = nullptr;
-  shared_ptr<vector<LCode>> candidates;
+  shared_ptr<unordered_set<pair<vector<int>, int>>> candidates;
   shared_ptr<const unordered_map<Hyperplane, vector<int>>> containing_map;
   shared_ptr<const unordered_map<ProjectivePoint, int>> indexes;
+  shared_ptr<const vector<size_t>> unit_vector_index;
 };
 
 struct ExtensionParams

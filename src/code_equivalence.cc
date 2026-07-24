@@ -2,10 +2,13 @@
 
 #include <fstream>
 #include <ostream>
+#include <unordered_set>
 
 /* ************************************************************************* */
-auto write_lcequivalence_input(const vector<LCode> &codes, const Params &params,
-                               const string &filename) -> void
+auto write_lcequivalence_input(
+    const unordered_set<pair<vector<int>, int>> &codes, 
+    const Params &params,
+    const string &filename) -> void
 {
   std::ofstream file(filename);
 
@@ -14,34 +17,39 @@ auto write_lcequivalence_input(const vector<LCode> &codes, const Params &params,
 
   size_t idx = 1;
 
-  for (const auto &code : codes)
+  auto points = params.ps_kp1->get_all_points();
+
+  for (const auto &[code, n] : codes)
   {
-    auto k = code.get_nb_rows();
-    auto n = code.get_nb_columns();
     auto q = params.field->get_order();
 
-    file << "? " << k << " " << n << " " << q << " " << idx++ << "\n";
+    file << "? " << params.k + 1 << " " << n << " " << q << " " << idx++ << "\n";
 
     bool use_commas = q > 10;
 
-    for (size_t i = 0; i < k; i++)
+    for (size_t j = 0; j < params.k + 1; j++)
     {
-      for (size_t j = 0; j < n; j++)
+      for (size_t i = 0; i < points.size(); i++)
       {
-        int value = code(i, j).index();
+        if (code[i] == 0)
+          continue;
 
-        if (use_commas)
+        int value = points[i].get_coordinate(j).index();
+
+        for (size_t l = 0; l < code[i]; l++)
         {
-          if (j)
-            file << ",";
-          file << value;
-        }
-        else
-        {
-          file << value;
+          if (use_commas)
+          {
+            if (i)
+              file << ",";
+            file << value;
+          }
+          else
+          {
+            file << value;
+          }
         }
       }
-
       file << "\n";
     }
   }
@@ -147,14 +155,17 @@ auto parse_lcequivalence_output(const std::string &filename, Params &params)
 }
 
 /* ************************************************************************* */
-auto remove_equivalent_codes(const std::vector<LCode> &candidates,
-                             Params &params) -> std::vector<LCode>
+auto remove_equivalent_codes(
+    const unordered_set<pair<vector<int>, int>> &candidates,
+    Params &params) -> vector<LCode>
 {
   system("mkdir -p RES_DIR0");
 
   write_lcequivalence_input(candidates, params, "RES_DIR0/EXAM");
 
+  cout << "Calling LCequivalence...\n";
   call_lcequivalence();
+  cout << "Done...\n";
 
   return parse_lcequivalence_output("RES_DIR0/EXAM_r", params);
 }

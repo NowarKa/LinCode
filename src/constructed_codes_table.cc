@@ -4,11 +4,14 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
+#include <execution>
 #include <fstream>
 #include <iomanip>
-#include <memory>
 #include <queue>
 #include <string>
+#include <utility>
+#include <vector>
 
 /* ************************************************************************* */
 auto ConstructedCodesTable::insert_code(LCode &code) -> void
@@ -115,7 +118,7 @@ auto ConstructedCodesTable::save(shared_ptr<const Field> field,
       out << code.get_nb_columns() << " " << code.get_nb_rows() << " "
           << code.minimum_distance() << endl;
       out << "Is projective: " << code.is_projective() << endl;
-      out << code;
+      out << code.to_string();
       out << "---\n";
     }
   } // end for
@@ -202,6 +205,36 @@ auto ConstructedCodesTable::split_by_weight_enumerator(int k0, int nb_thread)
 }
 
 /* ************************************************************************* */
+auto ConstructedCodesTable::split(int k, int nb_threads) 
+  -> vector<vector<LCode>>
+{
+  vector<vector<LCode>> result(nb_threads);
+
+  for (const auto& [key, value] : table_) {
+    if (key.second != k)
+      continue;
+
+    size_t i = 0;
+    size_t nb_added_codes = 0;
+    size_t partition_size = value.size()/nb_threads;
+
+    for (const auto &code : value)
+    {
+      if (nb_added_codes > partition_size)
+      {
+        nb_added_codes = 0;
+        i = (i + 1) % nb_threads;
+      }
+      result[i].push_back(code);
+      nb_added_codes++;
+    }
+
+  }
+
+  return result;
+}
+
+/* ************************************************************************* */
 struct ParsedFieldInfo
 {
   int characteristic;
@@ -244,14 +277,14 @@ auto parse_field_header(ifstream &in) -> ParsedFieldInfo
   return result;
 }
 
-/*
 auto ConstructedCodesTable::load(
     shared_ptr<const Field> field,
-    int upper_bound_k,
-    int upper_bound_n,
-    const filesystem::path& directory) -> void
+    const filesystem::path& directory) -> pair<size_t, size_t>
 {
   namespace fs = filesystem;
+
+  size_t max_n = 0;
+  size_t max_k = 0;
 
   for (const auto& entry : fs::directory_iterator(directory))
   {
@@ -268,40 +301,92 @@ auto ConstructedCodesTable::load(
     size_t n = stoull(stem.substr(0, pos));
     size_t k = stoull(stem.substr(pos + 1));
 
+    max_n = max(max_n, n);
+    max_k = max(max_k, k);
+
+    /*
     if (n > upper_bound_n || k > upper_bound_k)
       continue;
+    */
 
     ifstream in(entry.path());
 
     if (!in)
       throw runtime_error("Cannot open " + entry.path().string());
 
+    /*
     ParsedFieldInfo field_info =
         parse_field_header(in);
+    */
 
     string line;
     string current;
 
-    while (getline(in, line))
+    if (!in)
+        throw std::runtime_error("Cannot open file.");
+
+    getline(in, line); // characteristic=...
+    getline(in, line); // reduction_polynomial=...
+    getline(in, line); // empty line
+
+    while (true)
     {
-      if (line == "---")
+      // Reading line "n k d"
+      if (!std::getline(in, line))
+        break;
+
+      if (line.empty())
+        continue;
+
+      std::istringstream iss(line);
+
+      int n, k, d;
+      if (!(iss >> n >> k >> d))
+        throw std::runtime_error("Invalid format for line n k d.");
+
+
+      // Reading "Is projective: ..."
+      if (!std::getline(in, line))
+        throw std::runtime_error("Inexepected end of line.");
+
+      vector<vector<FieldElement>> G;
+      G.reserve(k);
+
+      // Reading generator matrix
+      for (int i = 0; i < k; ++i)
       {
-        if (!current.empty())
-        {
-          table_[{n, k}].insert(LCode::from_canonical_form(current, field));
-          current.clear();
-        }
+        if (!std::getline(in, line))
+          throw std::runtime_error("Inexepected end of file.");
+
+        std::istringstream row(line);
+        std::vector<FieldElement> r;
+        r.reserve(n);
+
+        int x;
+        while (row >> x)
+          r.push_back(field->get_element(x));
+
+        if ((int)r.size() != n)
+          throw std::runtime_error("Incorrect number of columns.");
+
+        G.push_back(std::move(r));
       }
-      else
+
+      LCode code = LCode(G);
+      table_[{n,k}].insert(code);
+
+      // Reading ---
+      if (!std::getline(in, line))
+        break;
+
+      if (line != "---")
       {
-        current += line;
-        current += '\n';
+        cout << "In " << stem << endl;
+        throw std::runtime_error("Expected ---.");
       }
     }
 
-    if (!current.empty())
-      table_[{n, k}].insert(LCode::from_canonical_form(current, field));
-
   }
+
+  return {max_n, max_k};
 }
-*/

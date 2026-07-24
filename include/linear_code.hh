@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -144,6 +145,9 @@ public:
    * all P.
    */
   auto is_projective() const -> bool;
+
+
+  auto to_string() const -> string;
 
   /**
    * Access for mutable matrix

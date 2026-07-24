@@ -41,8 +41,9 @@ auto transpose(const vector<vector<FieldElement>> &matrix)
 
 /* ************************************************************************* */
 LCode::LCode(const vector<vector<FieldElement>> &rows)
-    : rows_(rows), columns_(transpose(rows)), weight_enumerator_({})
+    : rows_(rows), columns_(transpose(rows))
 {
+  to_multiset();
 }
 
 /* ************************************************************************* */
@@ -321,4 +322,22 @@ auto LCode::is_projective() const -> bool
       return false;
 
   return true;
+}
+
+/* ************************************************************************* */
+auto LCode::to_string() const -> string
+{
+  string out;
+  for (size_t i = 0; i < get_nb_rows(); i++)
+  {
+    for (size_t j = 0; j < get_nb_columns(); j++)
+    {
+      if (j)
+        out += " ";
+      out += std::to_string(rows_[i][j].index());
+    }
+    out += "\n";
+  }
+
+  return out;
 }

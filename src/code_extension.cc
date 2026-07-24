@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
+#include <execution>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -16,16 +17,6 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-
-/* ************************************************************************* */
-auto get_position_unit_vector(size_t i, size_t k, uint32_t q) -> size_t
-{
-  // The first is (1, ..., 0)
-  if (i == 0)
-    return 0;
-
-  return pow(q, k - i) * (q * (1 - pow(q, i)) / (1 - q) * pow(q, i));
-}
 
 /* ************************************************************************* */
 auto passes_corollary_8(const LCode &parent, LCode &child,
@@ -55,12 +46,12 @@ auto passes_corollary_8(const LCode &parent, LCode &child,
 }
 
 /* ************************************************************************* */
-auto check_solution(const vector<int> &solution, uint32_t q, uint32_t k, int n,
-                    ExtensionParams &ext_params, size_t np_kp1) -> bool
+auto check_solution(const vector<int> &solution, 
+    ExtensionParams &ext_params, size_t np_kp1) -> bool
 {
   // Check x_<e_i> >= 1
-  for (size_t i = 0; i < k; i++)
-    if (solution[get_position_unit_vector(i, k, q)] < ext_params.r)
+  for (auto &i : *ext_params.params.unit_vector_index)
+    if (solution[i] < ext_params.r)
       return false;
 
   for (size_t i = 0; i < np_kp1; i++)
@@ -92,9 +83,6 @@ auto check_solution(const vector<int> &solution, uint32_t q, uint32_t k, int n,
 /* ************************************************************************* */
 auto check_lcode(LCode &code, ExtensionParams &ext_params) -> bool
 {
-  if (code.get_nb_columns() > ext_params.params.upper_bound_n)
-    return false;
-
   /*
   if (code.get_minimum_column_multiplicity() != ext_params.r)
     return false;
@@ -102,10 +90,7 @@ auto check_lcode(LCode &code, ExtensionParams &ext_params) -> bool
 
   return true;
   */
-  if (code.get_nb_rows() == 2)
-    return code.minimum_distance() >= ext_params.params.minimum_weight;
-
-  return true;
+  return code.minimum_distance() >= ext_params.params.minimum_weight;
 }
 
 /* ************************************************************************* */
@@ -202,8 +187,6 @@ auto build_equations(ExtensionParams &ext_params) -> Equations
     for (const auto &fe : field_elements)
     {
       auto p = p_k[i].concatenate(fe);
-      // auto index = distance(p_kp1.begin(), find(p_kp1.begin(), p_kp1.end(),
-      // p));
       auto index = ext_params.params.indexes->at(p);
       line[index] = 1;
     }
@@ -214,8 +197,6 @@ auto build_equations(ExtensionParams &ext_params) -> Equations
   auto line = vector<int>(np_kp1 + nh_kp1, 0);
   auto ekp1 = get_unit_vector(k + 1, k, field);
   auto p_ekp1 = ProjectivePoint(ekp1);
-  // auto idx = distance(p_kp1.begin(), find(p_kp1.begin(), p_kp1.end(),
-  // p_ekp1));
   auto idx = ext_params.params.indexes->at(p_ekp1);
   line[idx] = 1;
   A.push_back(line);
@@ -256,7 +237,7 @@ auto build_equations(ExtensionParams &ext_params) -> Equations
 /* ************************************************************************* */
 auto generate_equations(ExtensionParams &ext_params) -> void
 {
-  auto k = ext_params.lcode.get_nb_rows();
+  auto k = ext_params.params.k;
   auto p_kp1 = ext_params.params.ps_kp1->get_all_points();
   auto np_kp1 = p_kp1.size();
 
@@ -307,25 +288,27 @@ auto generate_equations(ExtensionParams &ext_params) -> void
 
   vector<LCode> candidates;
 
+  auto n = ext_params.lcode.get_nb_columns();
+
+  cout << "Filtering solutions...\n";
   for (const auto &solution : solutions)
   {
-    if (!check_solution(solution, ext_params.params.field->get_order(), k,
-                        ext_params.lcode.get_nb_columns() + ext_params.r,
-                        ext_params, np_kp1))
+    if (!check_solution(solution, ext_params, np_kp1))
       continue;
 
-    auto code = construct_lcode_from_solution(solution, ext_params);
+    auto m = n + ext_params.r;
 
-    if (ext_params.lcode.get_nb_rows() == 1 &&
-        code.get_nb_columns() < ext_params.lcode.get_nb_columns())
-      continue;
-
-    if ( // passes_corollary_8(ext_params.lcode, code, ext_params) &&
-        check_lcode(code, ext_params))
+    if (k == 1)
     {
-      ext_params.params.candidates->push_back(code);
+      auto code = construct_lcode_from_solution(solution, ext_params);
+      if (code.get_nb_columns() < n || 
+          !check_lcode(code, ext_params))
+        continue;
+      m = code.get_nb_columns();
     }
+    ext_params.params.candidates->insert({solution, m});
   } // end for
+  cout << "Done.\n";
 
   return;
 }
@@ -338,11 +321,14 @@ auto extend_code(LCode &code, Params &params, int thread_id) -> void
 
   for (int r = 1; r <= code.get_minimum_column_multiplicity(); r++)
   {
-    int b = code.get_nb_columns() + r;
+    int m = code.get_nb_columns() + r;
+
+    if (m > params.upper_bound_n || (m <= params.load_n && code.get_nb_rows() <= params.load_k))
+      continue;
+
+    int b = min(m/params.delta, params.maximum_weight/params.delta);
     ExtensionParams ext_params = {
         params, max(params.minimum_weight, 1), b, r, thread_id, code};
-    // ExtensionParams ext_params = {params, max(params.minimum_weight, 1), b,
-    // r, thread_id, code};
     generate_equations(ext_params);
   }
 

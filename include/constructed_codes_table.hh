@@ -12,6 +12,7 @@
 #include <queue>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 using namespace std;
@@ -75,12 +76,8 @@ public:
   /**
     Loads ConstructedCodesTable's content from files.
    */
-  /*
   auto load(shared_ptr<const Field> field,
-      int upper_bound_k = INT_MAX,
-      int upper_bound_n = INT_MAX,
-      const filesystem::path& directory = "data") -> void;
-  */
+      const filesystem::path& directory = "data") -> pair<size_t, size_t>;
 
   /**
    * Loads all codes of dimension [n', k] to queue to start classifcation.
@@ -109,6 +106,15 @@ public:
    */
   auto split_by_weight_enumerator(int k, int nb_thread)
       -> vector<vector<LCode>>;
+
+  /**
+   * Splits all [n, k] LCodes into `nb_threads` groups according to 
+   * their number of columns.
+   *
+   * @param k A specified integer.
+   * @param nb_thread The number of groups (typically one per thread).
+   */
+  auto split(int k, int nb_threads) -> vector<vector<LCode>>;
 
   /**
     Outputs a ConstructedCodesTable to the standard output

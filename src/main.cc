@@ -7,6 +7,7 @@
 #include "projective_space.hh"
 
 #include <CLI/CLI.hpp>
+#include <algorithm>
 #include <cassert>
 #include <chrono>
 #include <cmath>
@@ -18,6 +19,16 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+auto get_position_unit_vector(size_t i, size_t k, uint32_t q) -> size_t
+{
+  // The first is (1, ..., 0)
+  if (i == 0)
+    return 0;
+
+  return pow(q, k - i) * (q * (1 - pow(q, i)) / (1 - q) * pow(q, i));
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -50,11 +61,10 @@ int main(int argc, char *argv[])
   app.add_flag("--save-results", params.save_results,
                "Save the classified codes to disk.");
 
-  app.add_option(
-      "--load", params.k,
+  app.add_flag(
+      "--load", params.load,
       "Load previously saved results and "
-      "initialize the queue with all saved codes of dimension [n', k], "
-      "where k is fixed.");
+      "initialize the table with all saved codes of dimension [n, k].");
 
   app.add_option("--ubn", params.upper_bound_n,
                  "Classify linear codes of "
@@ -90,7 +100,7 @@ int main(int argc, char *argv[])
   }
 
   // TODO: To change later
-  int ub_k = 8;
+  int ub_k = 6;
   int k = params.k;
 
   // Constructing Field
@@ -99,38 +109,39 @@ int main(int argc, char *argv[])
         make_shared<const Field>(Field::parse_field_file(params.field_file));
 
   else
-    params.field = GF2_ptr;
+    // params.field = GF2_ptr;
   //  params.field = GF4_ptr;
   // params.field = GF8_ptr;
-  // params.field = GF3_ptr;
+    params.field = GF3_ptr;
 
   // Loading results and initializing the queue
-  if (params.k != 0)
-    cout << "Loading existing results...\n";
-
-  else
+  if (params.load)
   {
-    cout << "Adding one-dimensional linear codes...\n";
+    cout << "Loading existing results...\n";
+    auto p = constructed_codes.load(params.field);
+    params.load_n = p.first;
+    params.load_k = p.second;
+  }
 
-    for (size_t n = 2; n < params.upper_bound_n; ++n)
+  cout << "Adding one-dimensional linear codes...\n";
+
+  for (size_t n = max(2, params.load_n); n < params.upper_bound_n; ++n)
+  {
+    for (size_t d = params.minimum_weight; d <= n; ++d)
     {
-      for (size_t d = params.minimum_weight; d <= n; ++d)
-      {
-        if (d % params.delta != 0)
-          continue;
+      if (d % params.delta != 0)
+        continue;
 
-        vector<FieldElement> g(n, params.field->get_element(0));
+      vector<FieldElement> g(n, params.field->get_element(0));
 
-        for (size_t i = 0; i < d; ++i)
-          g[i] = params.field->get_element(1);
+      for (size_t i = 0; i < d; ++i)
+        g[i] = params.field->get_element(1);
 
-        auto code = LCode({g});
-        constructed_codes.insert_code(code);
-      }
+      auto code = LCode({g});
+      constructed_codes.insert_code(code);
     }
-    cout << "Done\n";
-    k = 1;
-  } // end else
+  }
+  cout << "Done\n";
 
   long long int time_equivalence = 0;
   long long int time_sd = 0;
@@ -142,6 +153,7 @@ int main(int argc, char *argv[])
   while (k < ub_k)
   {
     // system("clear");
+    params.k = k;
 
     cout << "=================================================================="
             "\n";
@@ -158,8 +170,8 @@ int main(int argc, char *argv[])
             "\n";
 
     cout << "Splitting jobs...\n";
-    auto jobs =
-        constructed_codes.split_by_weight_enumerator(k, params.nb_threads);
+    auto jobs = constructed_codes.split(k, params.nb_threads);
+        // constructed_codes.split_by_weight_enumerator(k, params.nb_threads);
 
     bool is_empty = true;
 
@@ -197,8 +209,15 @@ int main(int argc, char *argv[])
 
     params.indexes = make_shared<unordered_map<ProjectivePoint, int>>(indexes);
 
-    vector<LCode> candidates;
-    params.candidates = make_shared<vector<LCode>>(candidates);
+    unordered_set<pair<vector<int>, int>> candidates;
+    params.candidates = make_shared<unordered_set<pair<vector<int>, int>>>(candidates);
+
+    vector<size_t> unit_vector_index(k);
+
+    for (size_t i = 0; i < k; i++)
+      unit_vector_index[i] = get_position_unit_vector(i, k+1, params.field->get_order());
+
+    params.unit_vector_index = make_shared<const vector<size_t>>(unit_vector_index);
 
     cout << "Extending...\n";
 #pragma omp parallel for
@@ -229,12 +248,12 @@ int main(int argc, char *argv[])
     k++;
   } // end while
 
-  if (params.save_results)
-    constructed_codes.save(params.field);
-
   chrono::steady_clock::time_point end = chrono::steady_clock::now();
   long long int execution_time =
       chrono::duration_cast<chrono::seconds>(end - begin).count();
+
+  if (params.save_results)
+    constructed_codes.save(params.field);
 
   auto equivalence_time_sec =
       static_cast<float>(*params.time_equivalence) / 1000;
